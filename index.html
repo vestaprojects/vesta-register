@@ -324,7 +324,7 @@ var DEFAULT_FLATS = [
 var STATUSES = ['available','token','negotiation','booked','blocked','registered','cancelled','lo-jv'];
 var SLBL = {available:'Available',booked:'Booked',token:'Token paid',blocked:'Blocked',negotiation:'Negotiation',registered:'Registered',cancelled:'Cancelled','lo-jv':'L.O.-JV Flat'};
 
-var projs = [], flats = [], activeProj = 'all', activeSt = 'all', editKey = null, delProj = null;
+var projs = [], flats = [], activeProj = 'all', activeSt = 'all', editKey = null, delProj = null, dataReady = false;
 
 function slbl(s){ return SLBL[s] || s; }
 function fd(d){ if(!d)return '—'; var p=d.split('-'); return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0] : '—'; }
@@ -343,6 +343,33 @@ function showStatus(msg, ok) {
   if(ok) setTimeout(function(){ el.style.display='none'; }, 5000);
 }
 
+function cleanDate(val) {
+  if(!val) return '';
+  var s = String(val);
+  // Already in YYYY-MM-DD format
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // Google Sheets Date object string like "Sat May 16 2026 00:00:00 GMT+0530"
+  if(s.indexOf('GMT') > -1 || s.indexOf('UTC') > -1) {
+    var d = new Date(s);
+    if(!isNaN(d.getTime())) {
+      var yr = d.getFullYear();
+      var mo = String(d.getMonth()+1).padStart(2,'0');
+      var dy = String(d.getDate()).padStart(2,'0');
+      return yr+'-'+mo+'-'+dy;
+    }
+  }
+  // Google Sheets serial number (days since Dec 30 1899)
+  var n = parseFloat(s);
+  if(!isNaN(n) && n > 1000) {
+    var d = new Date(Math.round((n - 25569) * 86400 * 1000));
+    var yr = d.getUTCFullYear();
+    var mo = String(d.getUTCMonth()+1).padStart(2,'0');
+    var dy = String(d.getUTCDate()).padStart(2,'0');
+    return yr+'-'+mo+'-'+dy;
+  }
+  return '';
+}
+
 function loadData(){
   showStatus('Loading...', true);
   fetch(SCRIPT_URL + '?action=getAll', {redirect:'follow'})
@@ -353,8 +380,8 @@ function loadData(){
           return {
             sl: parseInt(f.sl)||0, flatno: String(f.flatno||''), floor: String(f.floor||''),
             area: parseInt(f.area)||0, project: String(f.project||''), client: String(f.client||''),
-            status: String(f.status||'available'), advance: String(f.advance||''),
-            ref: String(f.ref||''), agreement: String(f.agreement||''),
+            status: String(f.status||'available'), advance: cleanDate(f.advance),
+            ref: String(f.ref||''), agreement: cleanDate(f.agreement),
             registration: String(f.registration||''), bank: String(f.bank||''),
             notes: String(f.notes||'')
           };
@@ -367,20 +394,32 @@ function loadData(){
       } else {
         projs = DEFAULT_PROJS.slice();
       }
+      // Deduplicate by flatno+project just in case
+      var seen = {};
+      flats = flats.filter(function(f){
+        var key = f.flatno + '|' + f.project;
+        if(seen[key]) return false;
+        seen[key] = true;
+        return true;
+      });
       updateStats(); renderProjTabs(); renderAll();
+      dataReady = true;
       showStatus('✓ Synced', true);
     })
-    .catch(function(){
-      // Fallback to defaults if offline
+    .catch(function(err){
+      // Fallback to defaults if offline - do NOT save to sheet
+      console.log('Load error:', err);
       flats = deepCopy(DEFAULT_FLATS);
       projs = DEFAULT_PROJS.slice();
       updateStats(); renderProjTabs(); renderAll();
-      showStatus('Offline — showing local data', false);
+      dataReady = true;
+      showStatus('Offline - showing default data', false);
     });
 }
 
 var saveTimer = null;
 function saveData(){
+  if(!dataReady) return;
   showStatus('Saving...', true);
   clearTimeout(saveTimer);
   saveTimer = setTimeout(function(){
