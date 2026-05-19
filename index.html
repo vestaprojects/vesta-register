@@ -423,8 +423,10 @@ function loadData(){
 }
 
 var saveTimer = null;
+var isSaving = false;
 function saveData(){
-  if(!dataReady) return;
+  if(!dataReady || isSaving) return;
+  isSaving = true;
   showStatus('Saving...', true);
   clearTimeout(saveTimer);
   saveTimer = setTimeout(function(){
@@ -434,9 +436,9 @@ function saveData(){
       body: JSON.stringify({ action: 'saveAll', flats: flats, projs: projs })
     })
     .then(function(r){ return r.json(); })
-    .then(function(d){ showStatus(d.ok ? '✓ Saved to Google Sheets' : '⚠ Save failed', !!d.ok); })
-    .catch(function(){ showStatus('⚠ Could not save — check connection', false); });
-  }, 800);
+    .then(function(d){ isSaving=false; showStatus(d.ok ? '✓ Saved to Google Sheets' : '⚠ Save failed', !!d.ok); })
+    .catch(function(){ isSaving=false; showStatus('⚠ Could not save — check connection', false); });
+  }, 2000);
 }
 
 /* ── RENDER ── */
