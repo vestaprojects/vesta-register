@@ -152,7 +152,7 @@
 </div>
 <div class="top-bar">
   <h1>&#127968; Vesta Projects Register</h1>
-  <div class="top-bar-right">
+  <span id="sync-status" style="display:none;font-size:12px;color:#aaa;padding:4px 8px;background:rgba(255,255,255,.1);border-radius:5px;"></span><div class="top-bar-right">
     <button class="tbtn" id="btn-proj">&#9881; Projects</button>
     <button class="tbtn" id="btn-export">&#11015; Export CSV</button>
   </div>
@@ -330,20 +330,68 @@ function slbl(s){ return SLBL[s] || s; }
 function fd(d){ if(!d)return '—'; var p=d.split('-'); return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0] : '—'; }
 function he(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-/* Safe localStorage */
-function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
-function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_i8pPuNyalRb0vF2V025O-qnj9KE-3v5KAJklyfVp9oBlQ3j6yOYgkrgvgIydarzl/exec';
 
 function deepCopy(arr){ return arr.map(function(o){ return Object.assign({},o); }); }
 
-function loadData(){
-  var rp = lsGet('vesta_projs_v3'), rf = lsGet('vesta_flats_v3');
-  try{ var p = rp ? JSON.parse(rp) : null; projs = (p && p.length) ? p : DEFAULT_PROJS.slice(); }catch(e){ projs = DEFAULT_PROJS.slice(); }
-  try{ var f = rf ? JSON.parse(rf) : null; flats = (f && f.length) ? f : deepCopy(DEFAULT_FLATS); }catch(e){ flats = deepCopy(DEFAULT_FLATS); }
+function showStatus(msg, ok) {
+  var el = document.getElementById('sync-status');
+  if(!el) return;
+  el.textContent = msg;
+  el.style.color = ok ? '#27500a' : '#a32d2d';
+  el.style.display = 'inline';
+  if(ok) setTimeout(function(){ el.style.display='none'; }, 3000);
 }
+
+function loadData(){
+  showStatus('Loading...', true);
+  fetch(SCRIPT_URL + '?action=getAll')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.flats && data.flats.length){
+        flats = data.flats.map(function(f){
+          return {
+            sl: parseInt(f.sl)||0, flatno: String(f.flatno||''), floor: String(f.floor||''),
+            area: parseInt(f.area)||0, project: String(f.project||''), client: String(f.client||''),
+            status: String(f.status||'available'), advance: String(f.advance||''),
+            ref: String(f.ref||''), agreement: String(f.agreement||''),
+            registration: String(f.registration||''), bank: String(f.bank||''),
+            notes: String(f.notes||'')
+          };
+        });
+      } else {
+        flats = deepCopy(DEFAULT_FLATS);
+      }
+      if(data.projs && data.projs.length){
+        projs = data.projs.map(function(p){ return String(p.name||''); }).filter(Boolean);
+      } else {
+        projs = DEFAULT_PROJS.slice();
+      }
+      updateStats(); renderProjTabs(); renderAll();
+      showStatus('✓ Synced', true);
+    })
+    .catch(function(){
+      // Fallback to defaults if offline
+      flats = deepCopy(DEFAULT_FLATS);
+      projs = DEFAULT_PROJS.slice();
+      updateStats(); renderProjTabs(); renderAll();
+      showStatus('Offline — showing local data', false);
+    });
+}
+
+var saveTimer = null;
 function saveData(){
-  lsSet('vesta_projs_v3', JSON.stringify(projs));
-  lsSet('vesta_flats_v3', JSON.stringify(flats));
+  showStatus('Saving...', true);
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function(){
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveAll', flats: flats, projs: projs })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ showStatus(d.ok ? '✓ Saved to Google Sheets' : '⚠ Save failed', !!d.ok); })
+    .catch(function(){ showStatus('⚠ Could not save — check connection', false); });
+  }, 800);
 }
 
 /* ── RENDER ── */
@@ -668,9 +716,6 @@ function doExport(){
 
 /* ── INIT ── */
 loadData();
-renderProjTabs();
-updateStats();
-renderAll();
 </script>
 
 <script>
