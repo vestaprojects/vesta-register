@@ -404,7 +404,12 @@ function loadData(){
       });
       updateStats(); renderProjTabs(); renderAll();
       dataReady = true;
-      showStatus('✓ Synced', true);
+      // If sheet was empty, save defaults to sheet now
+      if(!data.flats || !data.flats.length) {
+        saveData();
+      } else {
+        showStatus('✓ Synced', true);
+      }
     })
     .catch(function(err){
       // Fallback to defaults if offline - do NOT save to sheet
