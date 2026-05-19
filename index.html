@@ -152,7 +152,7 @@
 </div>
 <div class="top-bar">
   <h1>&#127968; Vesta Projects Register</h1>
-  <span id="sync-status" style="display:none;font-size:12px;color:#aaa;padding:4px 8px;background:rgba(255,255,255,.1);border-radius:5px;"></span><div class="top-bar-right">
+  <span id="sync-status" style="display:none;font-size:13px;font-weight:500;color:#90ee90;padding:4px 10px;background:rgba(255,255,255,.15);border-radius:5px;"></span><div class="top-bar-right">
     <button class="tbtn" id="btn-proj">&#9881; Projects</button>
     <button class="tbtn" id="btn-export">&#11015; Export CSV</button>
   </div>
@@ -338,14 +338,14 @@ function showStatus(msg, ok) {
   var el = document.getElementById('sync-status');
   if(!el) return;
   el.textContent = msg;
-  el.style.color = ok ? '#27500a' : '#a32d2d';
+  el.style.color = ok ? '#90ee90' : '#ff9999';
   el.style.display = 'inline';
-  if(ok) setTimeout(function(){ el.style.display='none'; }, 3000);
+  if(ok) setTimeout(function(){ el.style.display='none'; }, 5000);
 }
 
 function loadData(){
   showStatus('Loading...', true);
-  fetch(SCRIPT_URL + '?action=getAll')
+  fetch(SCRIPT_URL + '?action=getAll', {redirect:'follow'})
     .then(function(r){ return r.json(); })
     .then(function(data){
       if(data.flats && data.flats.length){
@@ -386,6 +386,7 @@ function saveData(){
   saveTimer = setTimeout(function(){
     fetch(SCRIPT_URL, {
       method: 'POST',
+      redirect: 'follow',
       body: JSON.stringify({ action: 'saveAll', flats: flats, projs: projs })
     })
     .then(function(r){ return r.json(); })
