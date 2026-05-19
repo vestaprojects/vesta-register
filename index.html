@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Vesta Register</title>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+<meta name="apple-mobile-web-app-title" content="Vesta Register"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#1a1a1a"/>
+<link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20180%20180%22%3E%3Crect%20width%3D%22180%22%20height%3D%22180%22%20rx%3D%2240%22%20fill%3D%22%231a1a1a%22/%3E%3Ctext%20x%3D%2290%22%20y%3D%22120%22%20font-size%3D%2295%22%20text-anchor%3D%22middle%22%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:#f5f4f0;color:#1a1a1a;min-height:100vh;min-height:-webkit-fill-available}
+
+  .top-bar{background:#1a1a1a;color:#fff;padding:14px 16px;padding-top:max(14px,env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .top-bar h1{font-size:15px;font-weight:600;letter-spacing:.02em}
+  .top-bar-right{display:flex;gap:8px}
+  .tbtn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+  .tbtn:active{background:rgba(255,255,255,.25)}
+
+  .main{max-width:1200px;margin:0 auto;padding:16px}
+
+  .proj-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+  .ptab{padding:8px 16px;border-radius:20px;border:1.5px solid #d0cec8;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;color:#555;font-weight:500;transition:all .15s;-webkit-tap-highlight-color:transparent}
+  .ptab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  @media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat-card{background:#fff;border-radius:10px;padding:12px 16px;border:1px solid #e8e6e0}
+  .stat-card .lbl{font-size:11px;color:#888;margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+  .stat-card .num{font-size:26px;font-weight:600}
+  .num.av{color:#4a3fb5}.num.bk{color:#0d6e4e}.num.tk{color:#9a6200}.num.rg{color:#2a6e14}
+
+  .toolbar{background:#fff;border:1px solid #e8e6e0;border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:10px}
+  .st-pills{display:flex;gap:6px;flex-wrap:wrap}
+  .sp{padding:7px 13px;border-radius:20px;border:1px solid #d0cec8;background:#f5f4f0;font-size:13px;cursor:pointer;font-family:inherit;color:#555;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+  .sp.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+  .search-wrap{display:flex;gap:8px;align-items:center}
+  .search-wrap input{padding:9px 12px;border-radius:7px;border:1px solid #d0cec8;background:#f5f4f0;font-size:15px;font-family:inherit;color:#1a1a1a;flex:1;min-width:0;-webkit-appearance:none}
+  .add-flat-btn{background:#1a1a1a;color:#fff;border:none;border-radius:7px;padding:10px 16px;font-size:14px;cursor:pointer;font-family:inherit;white-space:nowrap;font-weight:500;-webkit-tap-highlight-color:transparent}
+
+  .table-wrap{background:#fff;border-radius:10px;border:1px solid #e8e6e0;overflow-x:auto}
+  .tbl-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid #e8e6e0;flex-wrap:wrap;gap:6px}
+  .tbl-header span{font-size:13px;color:#888;font-weight:500}
+  .tbl-hint{font-size:12px;color:#bbb;font-style:italic;font-weight:400!important}
+  @media(max-width:768px){.tbl-hint{display:none}}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:950px}
+  thead tr{background:#f9f8f5}
+  th{padding:10px 12px;text-align:left;font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #e8e6e0;white-space:nowrap}
+  td{padding:0;border-bottom:1px solid #f0ede8;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:#fafaf8}
+  tr.row-flash td{background:#f0faf4!important;transition:background .5s}
+
+  .cv{padding:9px 12px;min-height:40px;display:flex;align-items:center;gap:5px;cursor:pointer;color:#2a2a2a;border-radius:4px}
+  .cv:hover{background:#eeedfb}
+  .cv .eh{opacity:0;font-size:10px;color:#9b8ee0;transition:opacity .1s;flex-shrink:0}
+  .cv:hover .eh{opacity:1}
+  .ce{display:none;padding:3px 6px}
+  .ce input,.ce select{width:100%;padding:6px 9px;border:2px solid #7f77dd;border-radius:5px;font-size:13px;font-family:inherit;color:#1a1a1a;background:#fff;outline:none}
+  td.editing .cv{display:none}
+  td.editing .ce{display:block}
+  .sl-td{width:50px;text-align:center;color:#bbb;font-family:'DM Mono',monospace;font-size:12px}
+  .sl-td .cv{justify-content:center;cursor:default}
+  .sl-td .cv:hover{background:none}
+  .flat-td .cv{font-weight:600}
+  .proj-sub{font-size:11px;color:#bbb;padding:0 12px 5px;display:block}
+  .date-td .cv{font-family:'DM Mono',monospace;font-size:12px;color:#666}
+  .actions-td{width:80px;text-align:center;white-space:nowrap}
+  .actions-td .cv{justify-content:center;gap:4px;cursor:default}
+  .actions-td .cv:hover{background:none}
+
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+  .badge.available{background:#eeedfe;color:#3c3489}
+  .badge.booked{background:#e1f5ee;color:#085041}
+  .badge.token{background:#faeeda;color:#633806}
+  .badge.blocked{background:#faece7;color:#712b13}
+  .badge.negotiation{background:#e6f1fb;color:#0c447c}
+  .badge.registered{background:#eaf3de;color:#27500a}
+  .badge.cancelled{background:#fcebeb;color:#791f1f}
+  .badge.lo-jv{background:#f3e8fb;color:#6b1f8a}
+
+  .ibtn{background:none;border:1px solid #d0cec8;border-radius:5px;width:32px;height:32px;cursor:pointer;color:#666;font-size:14px;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;-webkit-tap-highlight-color:transparent}
+  .ibtn:hover{border-color:#1a1a1a;color:#1a1a1a}
+  .ibtn.danger:hover{border-color:#f09595;color:#a32d2d}
+
+  .status-cv{position:relative;cursor:pointer}
+  .status-sel{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:13px}
+  .badge-display{pointer-events:none}
+
+  .card-list{display:none;padding:0 0 16px}
+  @media(max-width:768px){
+    .table-wrap table{display:none}
+    .card-list{display:block}
+  }
+  .fc{background:#fff;border-radius:10px;border:1px solid #e8e6e0;padding:14px;margin-bottom:10px}
+  .fc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+  .fc-sl{font-size:11px;color:#aaa;font-family:'DM Mono',monospace}
+  .fc-name{font-size:16px;font-weight:600}
+  .fc-proj{font-size:12px;color:#888}
+  .dr{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0ede8;font-size:13px}
+  .dr:last-child{border-bottom:none}
+  .dk{color:#888}.dv{font-weight:500;text-align:right;max-width:60%}
+  .fc-edit{margin-top:12px;width:100%;padding:11px;border-radius:7px;border:1px solid #d0cec8;background:#f9f8f5;font-size:14px;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;padding:16px}
+  .modal-bg.open{display:flex}
+  .modal{background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .modal-head{padding:18px 20px 14px;border-bottom:1px solid #e8e6e0;display:flex;justify-content:space-between;align-items:center}
+  .modal-head h2{font-size:16px;font-weight:600}
+  .modal-close{background:none;border:none;font-size:26px;cursor:pointer;color:#888;line-height:1;padding:4px 8px;-webkit-tap-highlight-color:transparent}
+  .modal-body{padding:18px 20px}
+  .sec-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#888;margin:16px 0 10px}
+  .sec-lbl:first-child{margin-top:0}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:480px){.fgrid{grid-template-columns:1fr}}
+  .fcol2{grid-column:1/-1}
+  .fg{display:flex;flex-direction:column;gap:4px}
+  .fg label{font-size:12px;color:#666;font-weight:500}
+  .fg input,.fg select{padding:10px 11px;border-radius:7px;border:1px solid #d0cec8;font-size:15px;font-family:inherit;color:#1a1a1a;background:#f9f8f5;-webkit-appearance:none;appearance:none}
+  .fg input:focus,.fg select:focus{outline:none;border-color:#1a1a1a}
+  .modal-foot{padding:14px 20px;border-top:1px solid #e8e6e0;display:flex;gap:8px;justify-content:flex-end}
+  .btn-c{padding:10px 18px;border-radius:7px;border:1px solid #d0cec8;background:#f5f4f0;font-size:14px;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+  .btn-d{padding:10px 14px;border-radius:7px;border:1px solid #f09595;background:none;color:#a32d2d;font-size:14px;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+  .btn-s{padding:10px 20px;border-radius:7px;background:#1a1a1a;color:#fff;border:none;font-size:14px;cursor:pointer;font-family:inherit;font-weight:500;-webkit-tap-highlight-color:transparent}
+
+  .conf-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px}
+  .conf-bg.open{display:flex}
+  .conf-box{background:#fff;border-radius:12px;padding:24px;max-width:340px;width:100%;text-align:center}
+  .conf-box p{font-size:14px;color:#555;margin:10px 0 20px}
+  .conf-acts{display:flex;gap:8px}
+
+  .pi{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0ede8}
+  .pi:last-child{border-bottom:none}
+  .pname{font-size:14px;font-weight:500}.pcnt{font-size:12px;color:#aaa}
+  .pi-del{background:none;border:none;color:#a32d2d;cursor:pointer;font-size:13px;padding:6px 10px;border-radius:5px;-webkit-tap-highlight-color:transparent}
+  .pi-del:active{background:#fcebeb}
+  .padd{display:flex;gap:8px;margin-top:14px}
+  .padd input{flex:1;padding:10px 11px;border-radius:7px;border:1px solid #d0cec8;font-size:14px;font-family:inherit;-webkit-appearance:none}
+  .padd button{padding:0 16px;border-radius:7px;background:#1a1a1a;color:#fff;border:none;font-size:14px;cursor:pointer;font-family:inherit;height:42px;-webkit-tap-highlight-color:transparent}
+</style>
+</head>
+<body>
+
+
+<div id="ios-banner" style="display:none;background:#1a1a1a;color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-family:sans-serif;line-height:1.5">
+  &#127968; Tap <strong>&#9633; Share</strong> then <strong>"Add to Home Screen"</strong> to install as an app
+  <button onclick="document.getElementById('ios-banner').style.display='none'" style="margin-left:12px;background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:5px;padding:4px 10px;cursor:pointer;font-size:13px">&#10005;</button>
+</div>
+<div class="top-bar">
+  <h1>&#127968; Vesta Projects Register</h1>
+  <div class="top-bar-right">
+    <button class="tbtn" id="btn-proj">&#9881; Projects</button>
+    <button class="tbtn" id="btn-export">&#11015; Export CSV</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="proj-tabs" id="proj-tabs"></div>
+  <div class="stats">
+    <div class="stat-card"><div class="lbl">Available</div><div class="num av" id="sv-av">0</div></div>
+    <div class="stat-card"><div class="lbl">Booked</div><div class="num bk" id="sv-bk">0</div></div>
+    <div class="stat-card"><div class="lbl">Token paid</div><div class="num tk" id="sv-tk">0</div></div>
+    <div class="stat-card"><div class="lbl">Registered</div><div class="num rg" id="sv-rg">0</div></div>
+  </div>
+  <div class="toolbar">
+    <div class="st-pills" id="st-pills">
+      <button class="sp active" data-s="all">All</button>
+      <button class="sp" data-s="available">Available</button>
+      <button class="sp" data-s="token">Token paid</button>
+      <button class="sp" data-s="booked">Booked</button>
+      <button class="sp" data-s="negotiation">Negotiation</button>
+      <button class="sp" data-s="blocked">Blocked</button>
+      <button class="sp" data-s="registered">Registered</button>
+      <button class="sp" data-s="cancelled">Cancelled</button>
+      <button class="sp" data-s="lo-jv">L.O.-JV Flat</button>
+    </div>
+    <div class="search-wrap">
+      <input type="search" id="srch" placeholder="Search flat, client..." autocomplete="off" autocorrect="off" autocapitalize="off"/>
+      <button class="add-flat-btn" id="btn-add">+ Add flat</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="tbl-header">
+      <span id="res-count">0 flats</span>
+      <span class="tbl-hint">Click any cell to edit &bull; use &#9998; for full edit</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>SL</th><th>Flat No.</th><th>Floor</th><th>Area (sqft)</th>
+          <th>Client Name</th><th>Status</th><th>Advance Received</th>
+          <th>Reference</th><th>Agreement Date</th><th>Registration Date</th>
+          <th>Bank / Loan</th><th>Notes</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+    <div class="card-list" id="card-list"></div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-bg" id="flat-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modal-title">Add flat</h2>
+      <button class="modal-close" id="btn-close-modal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="sec-lbl">Flat details</div>
+      <div class="fgrid">
+        <div class="fg"><label>Flat No.</label><input id="f-flatno" placeholder="e.g. 1A" autocomplete="off"/></div>
+        <div class="fg"><label>Floor</label>
+          <input id="f-floor" list="floor-opts" placeholder="e.g. First Floor" autocomplete="off"/>
+          <datalist id="floor-opts">
+            <option value="Ground Floor"/><option value="First Floor"/>
+            <option value="Second Floor"/><option value="Third Floor"/>
+            <option value="Fourth Floor"/><option value="Fifth Floor"/>
+            <option value="Sixth Floor"/><option value="Terrace Floor"/>
+          </datalist>
+        </div>
+        <div class="fg"><label>Project</label><select id="f-proj"></select></div>
+        <div class="fg"><label>Flat Area (sqft)</label><input id="f-area" type="number" placeholder="1200"/></div>
+      </div>
+      <div class="sec-lbl">Booking info</div>
+      <div class="fgrid">
+        <div class="fg fcol2"><label>Client Name</label><input id="f-client" placeholder="Full name" autocomplete="off"/></div>
+        <div class="fg"><label>Booking Status</label>
+          <select id="f-status">
+            <option value="available">Available</option>
+            <option value="token">Token paid</option>
+            <option value="negotiation">Negotiation</option>
+            <option value="booked">Booked</option>
+            <option value="blocked">Blocked</option>
+            <option value="registered">Registered</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="lo-jv">L.O.-JV Flat</option>
+          </select>
+        </div>
+        <div class="fg"><label>Advance Received On</label><input id="f-advance" type="date"/></div>
+        <div class="fg fcol2"><label>Reference</label><input id="f-ref" placeholder="Broker / referral name" autocomplete="off"/></div>
+      </div>
+      <div class="sec-lbl">Legal milestones</div>
+      <div class="fgrid">
+        <div class="fg"><label>Agreement Date</label><input id="f-agr" type="date"/></div>
+        <div class="fg"><label>Registration Date</label><input id="f-reg" type="date"/></div>
+        <div class="fg fcol2"><label>Loan Applied in Bank</label><input id="f-bank" placeholder="Bank name or N/A" autocomplete="off"/></div>
+        <div class="fg fcol2"><label>Notes / Remarks</label><input id="f-notes" placeholder="Any additional notes" autocomplete="off"/></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-d" id="del-btn" style="display:none;margin-right:auto">&#128465; Delete</button>
+      <button class="btn-c" id="btn-cancel-modal">Cancel</button>
+      <button class="btn-s" id="btn-save-flat">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm -->
+<div class="conf-bg" id="del-conf">
+  <div class="conf-box">
+    <div style="font-size:32px">&#9888;</div>
+    <p id="del-msg">Delete this flat?</p>
+    <div class="conf-acts">
+      <button class="btn-c" style="flex:1" id="btn-cancel-del">Cancel</button>
+      <button class="btn-s" style="flex:1;background:#a32d2d" id="btn-do-del">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Projects modal -->
+<div class="modal-bg" id="proj-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Manage projects</h2>
+      <button class="modal-close" id="btn-close-proj">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="proj-list"></div>
+      <div class="padd">
+        <input id="new-proj" placeholder="New project name"/>
+        <button id="btn-add-proj">+ Add</button>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn-s" id="btn-done-proj">Done</button></div>
+  </div>
+</div>
+
+<!-- Project delete confirm -->
+<div class="conf-bg" id="pdel-conf">
+  <div class="conf-box">
+    <div style="font-size:32px">&#9888;</div>
+    <p id="pdel-msg">Remove project?</p>
+    <div class="conf-acts">
+      <button class="btn-c" style="flex:1" id="btn-cancel-pdel">Cancel</button>
+      <button class="btn-s" style="flex:1;background:#a32d2d" id="btn-do-pdel">Remove</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var DP = "Vesta's Dimensions - Balaji Street";
+var DEFAULT_PROJS = [DP];
+var DEFAULT_FLATS = [
+  {sl:1,  flatno:'1B', floor:'First Floor',  area:1008, project:DP, client:'Mrs. Priya & Mr. Subburam Velappan',  status:'registered', advance:'',           ref:'Ramkar - Ramesh',                              agreement:'',           registration:'Registered', bank:'SBI', notes:''},
+  {sl:2,  flatno:'3A', floor:'Third Floor',  area:1384, project:DP, client:'Mr. Parthiban & Mrs. Pavithra',       status:'token',      advance:'2026-05-16', ref:"Sasi / Ramesh-Vesta / Mr. Vasanthan's Friend", agreement:'2026-05-18', registration:'',          bank:'',    notes:'Agreement signed 18-05-2026'},
+  {sl:3,  flatno:'1A', floor:'First Floor',  area:1384, project:DP, client:'Mr. Chandra Rao Sathya Prasad',       status:'token',      advance:'2026-05-18', ref:'Ramesh - Vesta',                               agreement:'',           registration:'',          bank:'',    notes:''},
+  {sl:4,  flatno:'2A', floor:'Second Floor', area:1384, project:DP, client:'Mr. Karthikeyan & Mrs. Hema',         status:'token',      advance:'2026-05-20', ref:'Ramkar - Ramesh',                              agreement:'',           registration:'',          bank:'',    notes:''},
+  {sl:5,  flatno:'4C', floor:'Fourth Floor', area:1260, project:DP, client:'Mrs. Kavitha & Mr. Perumal',          status:'token',      advance:'2026-04-18', ref:"Ramesh-Vesta / Mr. Dinakar's Relative",        agreement:'2026-05-18', registration:'',          bank:'',    notes:'Agreement signed 18-05-2026'},
+  {sl:6,  flatno:'3B', floor:'Third Floor',  area:1008, project:DP, client:'',                                    status:'token',      advance:'2026-05-18', ref:'',                                             agreement:'',           registration:'',          bank:'',    notes:'Booking Advance Received 18-05-2026'},
+  {sl:7,  flatno:'4B', floor:'Fourth Floor', area:1008, project:DP, client:'',                                    status:'negotiation',advance:'',           ref:'',                                             agreement:'',           registration:'',          bank:'',    notes:'Expecting Booking'},
+  {sl:8,  flatno:'1C', floor:'First Floor',  area:1260, project:DP, client:'',                                    status:'negotiation',advance:'',           ref:'',                                             agreement:'',           registration:'',          bank:'',    notes:'Expecting Booking'},
+  {sl:9,  flatno:'2B', floor:'Second Floor', area:1008, project:DP, client:'',                                    status:'negotiation',advance:'',           ref:'',                                             agreement:'',           registration:'',          bank:'',    notes:'Expecting Booking'},
+  {sl:10, flatno:'2C', floor:'Second Floor', area:1260, project:DP, client:'',                                    status:'available',  advance:'',           ref:'',                                             agreement:'',           registration:'',          bank:'',    notes:''},
+  {sl:11, flatno:'3C', floor:'Third Floor',  area:1260, project:DP, client:'',                                    status:'available',  advance:'',           ref:'',                                             agreement:'',           registration:'',          bank:'',    notes:''},
+  {sl:12, flatno:'4A', floor:'Fourth Floor', area:1384, project:DP, client:'',                                    status:'available',  advance:'',           ref:'',                                             agreement:'',           registration:'',          bank:'',    notes:''}
+];
+
+var STATUSES = ['available','token','negotiation','booked','blocked','registered','cancelled','lo-jv'];
+var SLBL = {available:'Available',booked:'Booked',token:'Token paid',blocked:'Blocked',negotiation:'Negotiation',registered:'Registered',cancelled:'Cancelled','lo-jv':'L.O.-JV Flat'};
+
+var projs = [], flats = [], activeProj = 'all', activeSt = 'all', editKey = null, delProj = null;
+
+function slbl(s){ return SLBL[s] || s; }
+function fd(d){ if(!d)return '—'; var p=d.split('-'); return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0] : '—'; }
+function he(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* Safe localStorage */
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+
+function deepCopy(arr){ return arr.map(function(o){ return Object.assign({},o); }); }
+
+function loadData(){
+  var rp = lsGet('vesta_projs_v3'), rf = lsGet('vesta_flats_v3');
+  try{ var p = rp ? JSON.parse(rp) : null; projs = (p && p.length) ? p : DEFAULT_PROJS.slice(); }catch(e){ projs = DEFAULT_PROJS.slice(); }
+  try{ var f = rf ? JSON.parse(rf) : null; flats = (f && f.length) ? f : deepCopy(DEFAULT_FLATS); }catch(e){ flats = deepCopy(DEFAULT_FLATS); }
+}
+function saveData(){
+  lsSet('vesta_projs_v3', JSON.stringify(projs));
+  lsSet('vesta_flats_v3', JSON.stringify(flats));
+}
+
+/* ── RENDER ── */
+function filtered(){
+  var q = document.getElementById('srch').value.toLowerCase();
+  return flats.filter(function(f){
+    if(activeProj!=='all' && f.project!==activeProj) return false;
+    if(activeSt!=='all' && f.status!==activeSt) return false;
+    if(q && !f.flatno.toLowerCase().includes(q) && !(f.client||'').toLowerCase().includes(q) && !(f.ref||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+function updateStats(){
+  var base = activeProj==='all' ? flats : flats.filter(function(f){ return f.project===activeProj; });
+  document.getElementById('sv-av').textContent = base.filter(function(f){ return f.status==='available'; }).length;
+  document.getElementById('sv-bk').textContent = base.filter(function(f){ return f.status==='booked'; }).length;
+  document.getElementById('sv-tk').textContent = base.filter(function(f){ return f.status==='token'; }).length;
+  document.getElementById('sv-rg').textContent = base.filter(function(f){ return f.status==='registered'; }).length;
+}
+
+function renderProjTabs(){
+  var html = '<button class="ptab'+(activeProj==='all'?' active':'')+'" data-proj="">All</button>';
+  projs.forEach(function(p){
+    html += '<button class="ptab'+(activeProj===p?' active':'')+'" data-proj="'+encodeURIComponent(p)+'">'+he(p)+'</button>';
+  });
+  document.getElementById('proj-tabs').innerHTML = html;
+}
+
+function renderAll(){
+  var data = filtered();
+  document.getElementById('res-count').textContent = data.length+' flat'+(data.length!==1?'s':'');
+  renderTable(data);
+  renderCards(data);
+}
+
+function tcell(val, field, idx){
+  var safe = he(val||'');
+  var disp = val ? he(val) : '<span style="color:#ccc">&#8212;</span>';
+  return '<td data-field="'+field+'" data-idx="'+idx+'">'
+    +'<div class="cv" data-editcell="1"><span class="ct">'+disp+'</span><span class="eh">&#9998;</span></div>'
+    +'<div class="ce"><input type="text" value="'+safe+'" data-commit="1"/></div>'
+    +'</td>';
+}
+function dcell(val, field, idx){
+  return '<td class="date-td" data-field="'+field+'" data-idx="'+idx+'">'
+    +'<div class="cv" data-editcell="1"><span class="ct">'+fd(val)+'</span><span class="eh">&#9998;</span></div>'
+    +'<div class="ce"><input type="date" value="'+(val||'')+'" data-commitdate="1"/></div>'
+    +'</td>';
+}
+function scell(val, idx){
+  var opts = STATUSES.map(function(s){ return '<option value="'+s+'"'+(s===val?' selected':'')+'>'+slbl(s)+'</option>'; }).join('');
+  return '<td data-field="status" data-idx="'+idx+'">'
+    +'<div class="cv status-cv">'
+    +'<span class="badge '+val+' badge-display">'+slbl(val)+'</span>'
+    +'<select class="status-sel" data-changestatus="1">'+opts+'</select>'
+    +'<span class="eh">&#9998;</span>'
+    +'</div></td>';
+}
+
+function renderTable(data){
+  var tb = document.getElementById('tbl-body');
+  if(!data.length){ tb.innerHTML='<tr><td colspan="13" style="text-align:center;padding:40px;color:#aaa">No flats match</td></tr>'; return; }
+  var html = '';
+  data.forEach(function(f){
+    var idx = flats.indexOf(f);
+    html += '<tr>'
+      +'<td class="sl-td"><div class="cv" style="cursor:default;justify-content:center">'+f.sl+'</div></td>'
+      +'<td class="flat-td"><div class="cv" data-openedit="'+idx+'" style="cursor:pointer"><span>'+he(f.flatno)+'</span><span class="eh">&#9998;</span></div><span class="proj-sub">'+he(f.project)+'</span></td>'
+      +tcell(f.floor,'floor',idx)
+      +tcell(f.area,'area',idx)
+      +tcell(f.client,'client',idx)
+      +scell(f.status,idx)
+      +dcell(f.advance,'advance',idx)
+      +tcell(f.ref,'ref',idx)
+      +dcell(f.agreement,'agreement',idx)
+      +dcell(f.registration,'registration',idx)
+      +tcell(f.bank,'bank',idx)
+      +tcell(f.notes||'','notes',idx)
+      +'<td class="actions-td"><div class="cv">'
+      +'<button class="ibtn" data-openedit="'+idx+'">&#9998;</button>'
+      +'<button class="ibtn danger" data-quickdel="'+idx+'">&#128465;</button>'
+      +'</div></td>'
+      +'</tr>';
+  });
+  tb.innerHTML = html;
+}
+
+function renderCards(data){
+  var c = document.getElementById('card-list');
+  if(!data.length){ c.innerHTML='<div style="text-align:center;padding:32px;color:#aaa">No flats match</div>'; return; }
+  var html = '';
+  data.forEach(function(f){
+    var idx = flats.indexOf(f);
+    html += '<div class="fc">'
+      +'<div class="fc-head"><div>'
+      +'<div class="fc-sl">SL '+f.sl+' &middot; '+he(f.project)+'</div>'
+      +'<div class="fc-name">Flat '+he(f.flatno)+'</div>'
+      +'<div class="fc-proj">Floor '+he(f.floor||'—')+' &middot; '+f.area+' sqft</div>'
+      +'</div><span class="badge '+f.status+'">'+slbl(f.status)+'</span></div>'
+      +'<div>'
+      +'<div class="dr"><span class="dk">Client</span><span class="dv">'+he(f.client||'—')+'</span></div>'
+      +(f.advance?'<div class="dr"><span class="dk">Advance</span><span class="dv">'+fd(f.advance)+'</span></div>':'')
+      +(f.ref?'<div class="dr"><span class="dk">Reference</span><span class="dv">'+he(f.ref)+'</span></div>':'')
+      +(f.agreement?'<div class="dr"><span class="dk">Agreement</span><span class="dv">'+fd(f.agreement)+'</span></div>':'')
+      +(f.registration?'<div class="dr"><span class="dk">Registration</span><span class="dv">'+he(f.registration)+'</span></div>':'')
+      +(f.bank?'<div class="dr"><span class="dk">Bank</span><span class="dv">'+he(f.bank)+'</span></div>':'')
+      +(f.notes?'<div class="dr"><span class="dk">Notes</span><span class="dv">'+he(f.notes)+'</span></div>':'')
+      +'</div>'
+      +'<button class="fc-edit" data-openedit="'+idx+'">&#9998; Edit this flat</button>'
+      +'</div>';
+  });
+  c.innerHTML = html;
+}
+
+/* ── EVENT DELEGATION ── no inline onclick, no esc() injection */
+document.body.addEventListener('click', function(e){
+  var t = e.target;
+
+  /* Walk up to find the real action element */
+  var el = t;
+  while(el && el !== document.body){
+    if(el.dataset.openedit !== undefined){ openEdit(parseInt(el.dataset.openedit)); return; }
+    if(el.dataset.quickdel !== undefined){ quickDel(parseInt(el.dataset.quickdel)); return; }
+    if(el.dataset.editcell){ startEdit(el.closest('td')); return; }
+    if(el.classList.contains('ptab')){ activeProj = el.dataset.proj ? decodeURIComponent(el.dataset.proj) : 'all'; renderProjTabs(); updateStats(); renderAll(); return; }
+    if(el.classList.contains('sp')){ document.querySelectorAll('.sp').forEach(function(x){x.classList.remove('active');}); el.classList.add('active'); activeSt=el.dataset.s; renderAll(); return; }
+    if(el.classList.contains('pi-del')){ askProjDel(decodeURIComponent(el.dataset.proj)); return; }
+    el = el.parentElement;
+  }
+
+  /* Static button IDs */
+  var id = t.id;
+  if(id==='btn-proj') { openProjMgr(); return; }
+  if(id==='btn-export') { doExport(); return; }
+  if(id==='btn-add') { openAdd(); return; }
+  if(id==='btn-close-modal'||id==='btn-cancel-modal') { closeModal(); return; }
+  if(id==='btn-save-flat') { saveFlat(); return; }
+  if(id==='del-btn') { askDel(); return; }
+  if(id==='btn-cancel-del') { document.getElementById('del-conf').classList.remove('open'); return; }
+  if(id==='btn-do-del') { doDel(); return; }
+  if(id==='btn-close-proj'||id==='btn-done-proj') { closeProjMgr(); return; }
+  if(id==='btn-add-proj') { addProj(); return; }
+  if(id==='btn-cancel-pdel') { document.getElementById('pdel-conf').classList.remove('open'); return; }
+  if(id==='btn-do-pdel') { doProjDel(); return; }
+});
+
+document.body.addEventListener('change', function(e){
+  var t = e.target;
+  if(t.dataset.changestatus){
+    var td = t.closest('td');
+    var idx = parseInt(td.dataset.idx);
+    var val = t.value;
+    if(idx>=0 && flats[idx]){
+      flats[idx].status = val;
+      saveData(); updateStats();
+      var badge = td.querySelector('.badge-display');
+      if(badge){ badge.className='badge badge-display '+val; badge.textContent=slbl(val); }
+      var tr = td.closest('tr');
+      tr.classList.remove('row-flash'); void tr.offsetWidth; tr.classList.add('row-flash');
+      setTimeout(function(){ tr.classList.remove('row-flash'); }, 600);
+    }
+    return;
+  }
+  if(t.dataset.commitdate){ commitInput(t); }
+});
+
+document.getElementById('srch').addEventListener('input', renderAll);
+document.getElementById('new-proj').addEventListener('keydown', function(e){ if(e.key==='Enter') addProj(); });
+
+/* Blur for text cells — use capture to catch before DOM reuse */
+document.body.addEventListener('blur', function(e){
+  if(e.target.dataset.commit || e.target.dataset.commitdate){ commitInput(e.target); }
+}, true);
+
+document.body.addEventListener('keydown', function(e){
+  if(e.target.dataset.commit || e.target.dataset.commitdate){
+    if(e.key==='Enter') e.target.blur();
+    if(e.key==='Escape'){ var td=e.target.closest('td'); if(td) td.classList.remove('editing'); }
+  }
+});
+
+function startEdit(td){
+  if(!td) return;
+  td.classList.add('editing');
+  var inp = td.querySelector('input');
+  if(inp){ inp.focus(); if(inp.type==='date' && inp.showPicker) try{inp.showPicker();}catch(ex){} }
+}
+
+function commitInput(inp){
+  var td = inp.closest('td'); if(!td) return;
+  var field = td.dataset.field, idx = parseInt(td.dataset.idx), val = inp.value;
+  if(idx>=0 && flats[idx]){
+    flats[idx][field] = (field==='area') ? (parseInt(val)||0) : val;
+    saveData(); updateStats();
+    var ct = td.querySelector('.ct');
+    if(ct){
+      if(field==='advance'||field==='agreement'||field==='registration') ct.textContent = fd(val)||'—';
+      else{ ct.innerHTML = val ? he(val) : '<span style="color:#ccc">&#8212;</span>'; }
+    }
+    var tr = td.closest('tr');
+    if(tr){ tr.classList.remove('row-flash'); void tr.offsetWidth; tr.classList.add('row-flash'); setTimeout(function(){ tr.classList.remove('row-flash'); },600); }
+  }
+  td.classList.remove('editing');
+}
+
+/* ── MODAL ── */
+function pSel(){
+  document.getElementById('f-proj').innerHTML = projs.map(function(p){ return '<option value="'+he(p)+'">'+he(p)+'</option>'; }).join('');
+}
+function sv(id,v){ document.getElementById(id).value = v||''; }
+
+function openAdd(){
+  editKey = null;
+  document.getElementById('modal-title').textContent = 'Add flat';
+  document.getElementById('del-btn').style.display = 'none';
+  pSel();
+  if(activeProj!=='all') document.getElementById('f-proj').value = activeProj;
+  ['f-flatno','f-floor','f-area','f-client','f-advance','f-ref','f-agr','f-reg','f-bank','f-notes'].forEach(function(id){ sv(id,''); });
+  document.getElementById('f-status').value = 'available';
+  document.getElementById('flat-modal').classList.add('open');
+}
+function openEdit(idx){
+  var f = flats[idx]; if(!f) return;
+  editKey = idx;
+  document.getElementById('modal-title').textContent = 'Edit - Flat '+f.flatno;
+  document.getElementById('del-btn').style.display = '';
+  pSel(); document.getElementById('f-proj').value = f.project;
+  sv('f-flatno',f.flatno); sv('f-floor',f.floor); sv('f-area',f.area); sv('f-client',f.client);
+  document.getElementById('f-status').value = f.status;
+  sv('f-advance',f.advance); sv('f-ref',f.ref); sv('f-agr',f.agreement); sv('f-reg',f.registration); sv('f-bank',f.bank); sv('f-notes',f.notes||'');
+  document.getElementById('flat-modal').classList.add('open');
+}
+function closeModal(){ document.getElementById('flat-modal').classList.remove('open'); }
+
+function nextSl(){ return flats.length ? Math.max.apply(null, flats.map(function(f){ return f.sl||0; }))+1 : 1; }
+
+function saveFlat(){
+  var fn = document.getElementById('f-flatno').value.trim();
+  var pj = document.getElementById('f-proj').value;
+  if(!fn){ alert('Flat No. is required'); return; }
+  var obj = {
+    sl: editKey!==null ? (flats[editKey] ? flats[editKey].sl : nextSl()) : nextSl(),
+    flatno:fn, project:pj,
+    floor:document.getElementById('f-floor').value.trim()||'',
+    area:parseInt(document.getElementById('f-area').value)||0,
+    client:document.getElementById('f-client').value.trim(),
+    status:document.getElementById('f-status').value,
+    advance:document.getElementById('f-advance').value,
+    ref:document.getElementById('f-ref').value.trim(),
+    agreement:document.getElementById('f-agr').value,
+    registration:document.getElementById('f-reg').value,
+    bank:document.getElementById('f-bank').value.trim(),
+    notes:document.getElementById('f-notes').value.trim()
+  };
+  if(editKey!==null){ flats[editKey] = obj; }
+  else{
+    var dup = flats.some(function(x){ return x.flatno===fn && x.project===pj; });
+    if(dup){ alert('Flat '+fn+' already exists in '+pj); return; }
+    flats.push(obj);
+  }
+  saveData(); updateStats(); renderProjTabs(); renderAll(); closeModal();
+}
+
+function askDel(){
+  var f = editKey!==null ? flats[editKey] : null;
+  document.getElementById('del-msg').textContent = 'Delete flat '+(f?f.flatno:'')+'? Cannot be undone.';
+  document.getElementById('del-conf').classList.add('open');
+}
+function quickDel(idx){ editKey=idx; askDel(); }
+function doDel(){
+  if(editKey!==null) flats.splice(editKey,1);
+  editKey=null;
+  saveData(); updateStats(); renderProjTabs(); renderAll();
+  document.getElementById('del-conf').classList.remove('open'); closeModal();
+}
+
+/* ── PROJECTS ── */
+function openProjMgr(){ renderProjList(); document.getElementById('proj-modal').classList.add('open'); }
+function closeProjMgr(){ document.getElementById('proj-modal').classList.remove('open'); renderProjTabs(); updateStats(); renderAll(); }
+function renderProjList(){
+  var c = document.getElementById('proj-list');
+  if(!projs.length){ c.innerHTML='<p style="color:#aaa;font-size:13px">No projects yet.</p>'; return; }
+  c.innerHTML = projs.map(function(p){
+    var cnt = flats.filter(function(f){ return f.project===p; }).length;
+    return '<div class="pi"><div><div class="pname">'+he(p)+'</div><div class="pcnt">'+cnt+' flat'+(cnt!==1?'s':'')+'</div></div>'
+      +'<button class="pi-del" data-proj="'+encodeURIComponent(p)+'">&#128465; Remove</button></div>';
+  }).join('');
+}
+function addProj(){
+  var inp = document.getElementById('new-proj'), name = inp.value.trim();
+  if(!name){ alert('Enter a project name'); return; }
+  if(projs.indexOf(name)>=0){ alert('Already exists'); return; }
+  projs.push(name); inp.value=''; saveData(); renderProjList();
+}
+function askProjDel(name){
+  delProj = name;
+  var cnt = flats.filter(function(f){ return f.project===name; }).length;
+  document.getElementById('pdel-msg').textContent = 'Remove "'+name+'"?'+(cnt?' Also deletes '+cnt+' flat'+(cnt!==1?'s':'')+'.':'');
+  document.getElementById('pdel-conf').classList.add('open');
+}
+function doProjDel(){
+  flats = flats.filter(function(f){ return f.project!==delProj; });
+  projs = projs.filter(function(p){ return p!==delProj; });
+  if(activeProj===delProj) activeProj='all';
+  saveData(); document.getElementById('pdel-conf').classList.remove('open'); renderProjList();
+}
+
+/* ── EXPORT ── */
+function doExport(){
+  var h = ['SL No','Flat No','Floor','Flat Area (sqft)','Project','Client Name','Booking Status','Advance Received On','Reference','Agreement Date','Registration Date','Loan Applied In Bank','Notes'];
+  var rows = flats.map(function(f){
+    return [f.sl,f.flatno,f.floor,f.area,f.project,f.client,slbl(f.status),f.advance,f.ref,f.agreement,f.registration,f.bank,f.notes||'']
+      .map(function(v){ return '"'+String(v||'').replace(/"/g,'""')+'"'; }).join(',');
+  });
+  var csv = [h.join(',')].concat(rows).join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download = 'vesta_projects_register.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+/* ── INIT ── */
+loadData();
+renderProjTabs();
+updateStats();
+renderAll();
+</script>
+
+<script>
+if(window.navigator.standalone === false) {
+  // Only show on iOS Safari, not already installed
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(isIOS) document.getElementById('ios-banner').style.display='block';
+}
+</script>
+
+</body>
+</html>
