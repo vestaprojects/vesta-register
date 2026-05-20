@@ -82,6 +82,7 @@
   .badge.registered{background:#eaf3de;color:#27500a}
   .badge.cancelled{background:#fcebeb;color:#791f1f}
   .badge.lo-jv{background:#f3e8fb;color:#6b1f8a}
+  .badge.agreement{background:#e8f4fb;color:#0c5c8a}
 
   .ibtn{background:none;border:1px solid #d0cec8;border-radius:5px;width:32px;height:32px;cursor:pointer;color:#666;font-size:14px;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;-webkit-tap-highlight-color:transparent}
   .ibtn:hover{border-color:#1a1a1a;color:#1a1a1a}
@@ -190,6 +191,7 @@
       <button class="sp" data-s="registered">Registered</button>
       <button class="sp" data-s="cancelled">Cancelled</button>
       <button class="sp" data-s="lo-jv">L.O.-JV Flat</button>
+      <button class="sp" data-s="agreement">Agreement signed</button>
     </div>
     <div class="search-wrap">
       <input type="search" id="srch" placeholder="Search flat, client..." autocomplete="off" autocorrect="off" autocapitalize="off"/>
@@ -253,6 +255,7 @@
             <option value="registered">Registered</option>
             <option value="cancelled">Cancelled</option>
             <option value="lo-jv">L.O.-JV Flat</option>
+            <option value="agreement">Agreement signed</option>
           </select>
         </div>
         <div class="fg"><label>Advance Received On</label><input id="f-advance" type="date"/></div>
@@ -353,8 +356,8 @@ var DEFAULT_FLATS = [
   {sl:12, flatno:'4A', floor:'Fourth Floor', area:1384, project:DP, client:'',                                   status:'available',  advance:'',           ref:'',                                             agreement:'',           registration:'', bank:'',    notes:''}
 ];
 
-var STATUSES = ['available','token','negotiation','booked','blocked','registered','cancelled','lo-jv'];
-var SLBL = {available:'Available',booked:'Booked',token:'Token paid',blocked:'Blocked',negotiation:'Negotiation',registered:'Registered',cancelled:'Cancelled','lo-jv':'L.O.-JV Flat'};
+var STATUSES = ['available','token','negotiation','booked','blocked','registered','cancelled','lo-jv','agreement'];
+var SLBL = {available:'Available',booked:'Booked',token:'Token paid',blocked:'Blocked',negotiation:'Negotiation',registered:'Registered',cancelled:'Cancelled','lo-jv':'L.O.-JV Flat',agreement:'Agreement signed'};
 var projs = [], flats = [], activeProj = 'all', activeSt = 'all', editKey = null, delProj = null;
 var dataReady = false, saveTimer = null;
 
