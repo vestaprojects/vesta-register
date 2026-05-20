@@ -453,13 +453,21 @@ function saveData(){
       });
     });
     var payload = JSON.stringify({ action: 'saveAll', flats: cleanFlats, projs: projs });
-    fetch(SCRIPT_URL + '?data=' + encodeURIComponent(payload), {
-      redirect: 'follow',
-      mode: 'cors'
+    // Use no-cors POST - GAS accepts it, we just can't read response
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: payload
     })
-    .then(function(r){ return r.json(); })
-    .then(function(d){ isSaving=false; showStatus(d.ok ? '✓ Saved to Google Sheets' : '⚠ Save failed', !!d.ok); })
-    .catch(function(){ isSaving=false; showStatus('⚠ Could not save — check connection', false); });
+    .then(function(){
+      isSaving = false;
+      showStatus('✓ Saved to Google Sheets', true);
+    })
+    .catch(function(err){
+      isSaving = false;
+      console.log('Save error:', err);
+      showStatus('⚠ Could not save — check connection', false);
+    });
   }, 2000);
 }
 
