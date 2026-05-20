@@ -307,7 +307,7 @@
 var DP = "Vesta's Dimensions - Balaji Street";
 var DEFAULT_PROJS = [DP];
 var DEFAULT_FLATS = [
-  {sl:1,  flatno:'1B', floor:'First Floor',  area:1008, project:DP, client:'Mrs. Priya & Mr. Subburam Velappan',  status:'registered', advance:'',           ref:'Ramkar - Ramesh',                              agreement:'',           registration:'Registered', bank:'SBI', notes:''},
+  {sl:1,  flatno:'1B', floor:'First Floor',  area:1008, project:DP, client:'Mrs. Priya & Mr. Subburam Velappan',  status:'registered', advance:'',           ref:'Ramkar - Ramesh',                              agreement:'',           registration:'', bank:'SBI', notes:''},
   {sl:2,  flatno:'3A', floor:'Third Floor',  area:1384, project:DP, client:'Mr. Parthiban & Mrs. Pavithra',       status:'token',      advance:'2026-05-16', ref:"Sasi / Ramesh-Vesta / Mr. Vasanthan's Friend", agreement:'2026-05-18', registration:'',          bank:'',    notes:'Agreement signed 18-05-2026'},
   {sl:3,  flatno:'1A', floor:'First Floor',  area:1384, project:DP, client:'Mr. Chandra Rao Sathya Prasad',       status:'token',      advance:'2026-05-18', ref:'Ramesh - Vesta',                               agreement:'',           registration:'',          bank:'',    notes:''},
   {sl:4,  flatno:'2A', floor:'Second Floor', area:1384, project:DP, client:'Mr. Karthikeyan & Mrs. Hema',         status:'token',      advance:'2026-05-20', ref:'Ramkar - Ramesh',                              agreement:'',           registration:'',          bank:'',    notes:''},
@@ -440,44 +440,35 @@ function loadData(){
 var saveTimer = null;
 var isSaving = false;
 function saveData(){
-  if(!dataReady || isSaving) return;
-  isSaving = true;
-  showStatus('Saving...', true);
+  if(!dataReady) return;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(function(){
-    // Clean dates before saving
+    isSaving = true;
+    showStatus('Saving...', true);
     var cleanFlats = flats.map(function(f){
       return Object.assign({}, f, {
         advance: cleanDateStr(f.advance),
-        agreement: cleanDateStr(f.agreement)
+        agreement: cleanDateStr(f.agreement),
+        registration: cleanDateStr(f.registration)
       });
     });
     var payload = JSON.stringify({ action: 'saveAll', flats: cleanFlats, projs: projs });
-    // Use JSONP - injects script tag, completely bypasses CORS
-    var cbName = 'vestaCb_' + Date.now();
-    window[cbName] = function(result){
+    // fetch POST with no-cors: Apps Script receives and saves the data.
+    // Response will be opaque (that's OK) — the write still succeeds on the server.
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: payload
+    }).then(function(){
       isSaving = false;
-      delete window[cbName];
-      var old = document.getElementById('jsonp-script');
-      if(old) old.parentNode.removeChild(old);
-      if(result && result.ok){
-        showStatus('✓ Saved to Google Sheets', true);
-      } else {
-        showStatus('⚠ Save failed: ' + (result&&result.error||'unknown'), false);
-      }
-    };
-    var s = document.createElement('script');
-    s.id = 'jsonp-script';
-    s.onerror = function(){
+      showStatus('✓ Saved to Google Sheets', true);
+    }).catch(function(err){
       isSaving = false;
-      delete window[cbName];
       showStatus('⚠ Could not save — check connection', false);
-    };
-    s.src = SCRIPT_URL + '?callback=' + cbName + '&data=' + encodeURIComponent(payload);
-    var old = document.getElementById('jsonp-script');
-    if(old) old.parentNode.removeChild(old);
-    document.body.appendChild(s);
-  }, 2000);
+      console.error('Save error:', err);
+    });
+  }, 1500);
 }
 
 /* ── RENDER ── */
