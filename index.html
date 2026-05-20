@@ -17,12 +17,12 @@
 
   .top-bar{background:#1a1a1a;color:#fff;padding:14px 16px;padding-top:max(14px,env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
   .top-bar h1{font-size:15px;font-weight:600;letter-spacing:.02em}
-  .top-bar-right{display:flex;gap:8px}
+  .top-bar-right{display:flex;gap:8px;align-items:center}
   .tbtn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
   .tbtn:active{background:rgba(255,255,255,.25)}
+  #sync-status{font-size:12px;font-weight:500;padding:4px 10px;background:rgba(255,255,255,.15);border-radius:5px;white-space:nowrap}
 
   .main{max-width:1200px;margin:0 auto;padding:16px}
-
   .proj-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
   .ptab{padding:8px 16px;border-radius:20px;border:1.5px solid #d0cec8;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;color:#555;font-weight:500;transition:all .15s;-webkit-tap-highlight-color:transparent}
   .ptab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
@@ -141,18 +141,31 @@
   .padd{display:flex;gap:8px;margin-top:14px}
   .padd input{flex:1;padding:10px 11px;border-radius:7px;border:1px solid #d0cec8;font-size:14px;font-family:inherit;-webkit-appearance:none}
   .padd button{padding:0 16px;border-radius:7px;background:#1a1a1a;color:#fff;border:none;font-size:14px;cursor:pointer;font-family:inherit;height:42px;-webkit-tap-highlight-color:transparent}
+
+  .loading-screen{position:fixed;inset:0;background:#f5f4f0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px}
+  .loading-screen.hidden{display:none}
+  .spinner{width:40px;height:40px;border:3px solid #e0deda;border-top-color:#1a1a1a;border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-screen p{font-size:14px;color:#888}
 </style>
 </head>
 <body>
 
+<div class="loading-screen" id="loading-screen">
+  <div style="font-size:36px">🏠</div>
+  <div class="spinner"></div>
+  <p>Connecting to database...</p>
+</div>
 
 <div id="ios-banner" style="display:none;background:#1a1a1a;color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-family:sans-serif;line-height:1.5">
   &#127968; Tap <strong>&#9633; Share</strong> then <strong>"Add to Home Screen"</strong> to install as an app
   <button onclick="document.getElementById('ios-banner').style.display='none'" style="margin-left:12px;background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:5px;padding:4px 10px;cursor:pointer;font-size:13px">&#10005;</button>
 </div>
+
 <div class="top-bar">
   <h1>&#127968; Vesta Projects Register</h1>
-  <span id="sync-status" style="display:none;font-size:13px;font-weight:500;color:#90ee90;padding:4px 10px;background:rgba(255,255,255,.15);border-radius:5px;"></span><div class="top-bar-right">
+  <div class="top-bar-right">
+    <span id="sync-status" style="color:#90ee90">● Live</span>
     <button class="tbtn" id="btn-proj">&#9881; Projects</button>
     <button class="tbtn" id="btn-export">&#11015; Export CSV</button>
   </div>
@@ -183,7 +196,6 @@
       <button class="add-flat-btn" id="btn-add">+ Add flat</button>
     </div>
   </div>
-
   <div class="table-wrap">
     <div class="tbl-header">
       <span id="res-count">0 flats</span>
@@ -222,6 +234,7 @@
             <option value="Second Floor"/><option value="Third Floor"/>
             <option value="Fourth Floor"/><option value="Fifth Floor"/>
             <option value="Sixth Floor"/><option value="Terrace Floor"/>
+            <option value="Villa"/>
           </datalist>
         </div>
         <div class="fg"><label>Project</label><select id="f-proj"></select></div>
@@ -303,175 +316,140 @@
   </div>
 </div>
 
-<script>
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ── PASTE YOUR FIREBASE CONFIG HERE ──────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyB66CEXVqV_1-A8LGrL29X_Dz-z7rGuQnY",
+  authDomain: "vesta-register.firebaseapp.com",
+  projectId: "vesta-register",
+  storageBucket: "vesta-register.firebasestorage.app",
+  messagingSenderId: "362321610709",
+  appId: "1:362321610709:web:0d23ad6a8637cccaab1f5c"
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ── DATA ──────────────────────────────────────────────────────────────────────
 var DP = "Vesta's Dimensions - Balaji Street";
-var DEFAULT_PROJS = [DP];
+var DEFAULT_PROJS = [DP,"Vestas Pride","Vestas Surya","Vestas Serene"];
 var DEFAULT_FLATS = [
-  {sl:1,  flatno:'1B', floor:'First Floor',  area:1008, project:DP, client:'Mrs. Priya & Mr. Subburam Velappan',  status:'registered', advance:'',           ref:'Ramkar - Ramesh',                              agreement:'',           registration:'', bank:'SBI', notes:''},
-  {sl:2,  flatno:'3A', floor:'Third Floor',  area:1384, project:DP, client:'Mr. Parthiban & Mrs. Pavithra',       status:'token',      advance:'2026-05-16', ref:"Sasi / Ramesh-Vesta / Mr. Vasanthan's Friend", agreement:'2026-05-18', registration:'',          bank:'',    notes:'Agreement signed 18-05-2026'},
-  {sl:3,  flatno:'1A', floor:'First Floor',  area:1384, project:DP, client:'Mr. Chandra Rao Sathya Prasad',       status:'token',      advance:'2026-05-18', ref:'Ramesh - Vesta',                               agreement:'',           registration:'',          bank:'',    notes:''},
-  {sl:4,  flatno:'2A', floor:'Second Floor', area:1384, project:DP, client:'Mr. Karthikeyan & Mrs. Hema',         status:'token',      advance:'2026-05-20', ref:'Ramkar - Ramesh',                              agreement:'',           registration:'',          bank:'',    notes:''},
-  {sl:5,  flatno:'4C', floor:'Fourth Floor', area:1260, project:DP, client:'Mrs. Kavitha & Mr. Perumal',          status:'token',      advance:'2026-04-18', ref:"Ramesh-Vesta / Mr. Dinakar's Relative",        agreement:'2026-05-18', registration:'',          bank:'',    notes:'Agreement signed 18-05-2026'},
-  {sl:6,  flatno:'3B', floor:'Third Floor',  area:1008, project:DP, client:'',                                    status:'token',      advance:'2026-05-18', ref:'',                                             agreement:'',           registration:'',          bank:'',    notes:'Booking Advance Received 18-05-2026'},
-  {sl:7,  flatno:'4B', floor:'Fourth Floor', area:1008, project:DP, client:'',                                    status:'negotiation',advance:'',           ref:'',                                             agreement:'',           registration:'',          bank:'',    notes:'Expecting Booking'},
-  {sl:8,  flatno:'1C', floor:'First Floor',  area:1260, project:DP, client:'',                                    status:'negotiation',advance:'',           ref:'',                                             agreement:'',           registration:'',          bank:'',    notes:'Expecting Booking'},
-  {sl:9,  flatno:'2B', floor:'Second Floor', area:1008, project:DP, client:'',                                    status:'negotiation',advance:'',           ref:'',                                             agreement:'',           registration:'',          bank:'',    notes:'Expecting Booking'},
-  {sl:10, flatno:'2C', floor:'Second Floor', area:1260, project:DP, client:'',                                    status:'available',  advance:'',           ref:'',                                             agreement:'',           registration:'',          bank:'',    notes:''},
-  {sl:11, flatno:'3C', floor:'Third Floor',  area:1260, project:DP, client:'',                                    status:'available',  advance:'',           ref:'',                                             agreement:'',           registration:'',          bank:'',    notes:''},
-  {sl:12, flatno:'4A', floor:'Fourth Floor', area:1384, project:DP, client:'',                                    status:'available',  advance:'',           ref:'',                                             agreement:'',           registration:'',          bank:'',    notes:''}
+  {sl:1,  flatno:'1B', floor:'First Floor',  area:1008, project:DP, client:"Mrs. Priya & Mr. Subburam Velappan", status:'registered', advance:'',           ref:'Ramkar - Ramesh',                              agreement:'',           registration:'', bank:'SBI', notes:''},
+  {sl:2,  flatno:'3A', floor:'Third Floor',  area:1384, project:DP, client:'Mr. Parthiban & Mrs. Pavithra',      status:'token',      advance:'2026-05-16', ref:"Sasi / Ramesh-Vesta / Mr. Vasanthan's Friend", agreement:'2026-05-18', registration:'', bank:'',    notes:'Agreement signed 18-05-2026'},
+  {sl:3,  flatno:'1A', floor:'First Floor',  area:1384, project:DP, client:'Mr. Chandra Rao Sathya Prasad',      status:'token',      advance:'2026-05-18', ref:'Ramesh - Vesta',                               agreement:'',           registration:'', bank:'',    notes:''},
+  {sl:4,  flatno:'2A', floor:'Second Floor', area:1384, project:DP, client:'Mr. Karthikeyan & Mrs. Hema',        status:'token',      advance:'2026-05-20', ref:'Ramkar - Ramesh',                              agreement:'',           registration:'', bank:'',    notes:''},
+  {sl:5,  flatno:'4C', floor:'Fourth Floor', area:1260, project:DP, client:"Mrs. Kavitha & Mr. Perumal",         status:'token',      advance:'2026-04-18', ref:"Ramesh-Vesta / Mr. Dinakar's Relative",        agreement:'2026-05-18', registration:'', bank:'',    notes:'Agreement signed 18-05-2026'},
+  {sl:6,  flatno:'3B', floor:'Third Floor',  area:1008, project:DP, client:'',                                   status:'token',      advance:'2026-05-18', ref:'',                                             agreement:'',           registration:'', bank:'',    notes:'Booking Advance Received 18-05-2026'},
+  {sl:7,  flatno:'4B', floor:'Fourth Floor', area:1008, project:DP, client:'',                                   status:'negotiation',advance:'',           ref:'',                                             agreement:'',           registration:'', bank:'',    notes:'Expecting Booking'},
+  {sl:8,  flatno:'1C', floor:'First Floor',  area:1260, project:DP, client:'',                                   status:'negotiation',advance:'',           ref:'',                                             agreement:'',           registration:'', bank:'',    notes:'Expecting Booking'},
+  {sl:9,  flatno:'2B', floor:'Second Floor', area:1008, project:DP, client:'',                                   status:'negotiation',advance:'',           ref:'',                                             agreement:'',           registration:'', bank:'',    notes:'Expecting Booking'},
+  {sl:10, flatno:'2C', floor:'Second Floor', area:1260, project:DP, client:'',                                   status:'available',  advance:'',           ref:'',                                             agreement:'',           registration:'', bank:'',    notes:''},
+  {sl:11, flatno:'3C', floor:'Third Floor',  area:1260, project:DP, client:'',                                   status:'available',  advance:'',           ref:'',                                             agreement:'',           registration:'', bank:'',    notes:''},
+  {sl:12, flatno:'4A', floor:'Fourth Floor', area:1384, project:DP, client:'',                                   status:'available',  advance:'',           ref:'',                                             agreement:'',           registration:'', bank:'',    notes:''}
 ];
 
 var STATUSES = ['available','token','negotiation','booked','blocked','registered','cancelled','lo-jv'];
 var SLBL = {available:'Available',booked:'Booked',token:'Token paid',blocked:'Blocked',negotiation:'Negotiation',registered:'Registered',cancelled:'Cancelled','lo-jv':'L.O.-JV Flat'};
+var projs = [], flats = [], activeProj = 'all', activeSt = 'all', editKey = null, delProj = null;
+var dataReady = false, saveTimer = null;
 
-var projs = [], flats = [], activeProj = 'all', activeSt = 'all', editKey = null, delProj = null, dataReady = false;
-
-function slbl(s){ return SLBL[s] || s; }
-function fd(d){ if(!d)return '—'; var p=d.split('-'); return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0] : '—'; }
+function slbl(s){ return SLBL[s]||s; }
+function fd(d){ if(!d||d==='—')return '—'; var p=String(d).split('-'); return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:'—'; }
 function he(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_i8pPuNyalRb0vF2V025O-qnj9KE-3v5KAJklyfVp9oBlQ3j6yOYgkrgvgIydarzl/exec';
-
-function deepCopy(arr){ return arr.map(function(o){ return Object.assign({},o); }); }
-
-function showStatus(msg, ok) {
+// ── SYNC STATUS ───────────────────────────────────────────────────────────────
+function setSyncStatus(msg, color){
   var el = document.getElementById('sync-status');
-  if(!el) return;
-  el.textContent = msg;
-  el.style.color = ok ? '#90ee90' : '#ff9999';
-  el.style.display = 'inline';
-  if(ok) setTimeout(function(){ el.style.display='none'; }, 5000);
+  if(el){ el.textContent = msg; el.style.color = color; }
 }
 
-function cleanDateStr(val) {
-  if(!val) return '';
-  var s = String(val);
-  // Already YYYY-MM-DD
-  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  // ISO string like 1905-03-18T18:38:50.000Z - parse and fix
-  var d = new Date(s);
-  if(!isNaN(d.getTime())) {
-    // Check if year is wrong (1905 means it was a serial number misread)
-    if(d.getFullYear() < 2000) return '';
-    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  }
-  return '';
-}
-
-function cleanDate(val) {
-  if(!val) return '';
-  var s = String(val);
-  // Already in YYYY-MM-DD format
-  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  // Google Sheets Date object string like "Sat May 16 2026 00:00:00 GMT+0530"
-  if(s.indexOf('GMT') > -1 || s.indexOf('UTC') > -1) {
-    var d = new Date(s);
-    if(!isNaN(d.getTime())) {
-      var yr = d.getFullYear();
-      var mo = String(d.getMonth()+1).padStart(2,'0');
-      var dy = String(d.getDate()).padStart(2,'0');
-      return yr+'-'+mo+'-'+dy;
-    }
-  }
-  // Google Sheets serial number (days since Dec 30 1899)
-  var n = parseFloat(s);
-  if(!isNaN(n) && n > 1000) {
-    var d = new Date(Math.round((n - 25569) * 86400 * 1000));
-    var yr = d.getUTCFullYear();
-    var mo = String(d.getUTCMonth()+1).padStart(2,'0');
-    var dy = String(d.getUTCDate()).padStart(2,'0');
-    return yr+'-'+mo+'-'+dy;
-  }
-  return '';
-}
-
-function loadData(){
-  showStatus('Loading...', true);
-  fetch(SCRIPT_URL + '?action=getAll', {redirect:'follow', mode:'cors'})
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      if(data.flats && data.flats.length){
-        flats = data.flats.map(function(f){
-          return {
-            sl: parseInt(f.sl)||0, flatno: String(f.flatno||''), floor: String(f.floor||''),
-            area: parseInt(f.area)||0, project: String(f.project||''), client: String(f.client||''),
-            status: String(f.status||'available'), advance: cleanDate(f.advance),
-            ref: String(f.ref||''), agreement: cleanDate(f.agreement),
-            registration: String(f.registration||''), bank: String(f.bank||''),
-            notes: String(f.notes||'')
-          };
-        });
-      } else {
-        flats = deepCopy(DEFAULT_FLATS);
-      }
-      if(data.projs && data.projs.length){
-        projs = data.projs.map(function(p){ return String(p.name||''); }).filter(Boolean);
-      } else {
-        projs = DEFAULT_PROJS.slice();
-      }
-      // Deduplicate by flatno+project just in case
-      var seen = {};
-      flats = flats.filter(function(f){
-        var key = f.flatno + '|' + f.project;
-        if(seen[key]) return false;
-        seen[key] = true;
-        return true;
-      });
-      updateStats(); renderProjTabs(); renderAll();
-      dataReady = true;
-      // If sheet was empty, save defaults to sheet now
-      if(!data.flats || !data.flats.length) {
-        saveData();
-      } else {
-        showStatus('✓ Synced', true);
-      }
-    })
-    .catch(function(err){
-      // Fallback to defaults if offline - do NOT save to sheet
-      console.log('Load error:', err);
-      flats = deepCopy(DEFAULT_FLATS);
+// ── FIREBASE LOAD & REALTIME SYNC ─────────────────────────────────────────────
+async function initData() {
+  try {
+    const docRef = doc(db, 'vesta', 'register');
+    // First load
+    const snap = await getDoc(docRef);
+    if(snap.exists() && snap.data().flats && snap.data().flats.length) {
+      applyData(snap.data());
+    } else {
+      // First time — save defaults
+      flats = DEFAULT_FLATS.map(function(f){ return Object.assign({},f); });
       projs = DEFAULT_PROJS.slice();
-      updateStats(); renderProjTabs(); renderAll();
-      dataReady = true;
-      showStatus('Offline - showing default data', false);
+      await saveToFirebase();
+    }
+    document.getElementById('loading-screen').classList.add('hidden');
+    dataReady = true;
+    setSyncStatus('● Live', '#90ee90');
+
+    // Real-time listener — updates all devices instantly
+    onSnapshot(docRef, function(snapshot){
+      if(!snapshot.exists()) return;
+      if(saveTimer) return; // skip if we're mid-save to avoid flicker
+      applyData(snapshot.data());
+      setSyncStatus('● Live', '#90ee90');
     });
+
+  } catch(err) {
+    console.error('Firebase error:', err);
+    document.getElementById('loading-screen').classList.add('hidden');
+    // Fallback to defaults offline
+    flats = DEFAULT_FLATS.map(function(f){ return Object.assign({},f); });
+    projs = DEFAULT_PROJS.slice();
+    dataReady = true;
+    setSyncStatus('⚠ Offline', '#ff9999');
+    updateStats(); renderProjTabs(); renderAll();
+  }
 }
 
-var saveTimer = null;
-var isSaving = false;
+function applyData(data) {
+  flats = (data.flats||[]).map(function(f){
+    return {
+      sl: parseInt(f.sl)||0,
+      flatno: String(f.flatno||''),
+      floor: String(f.floor||''),
+      area: parseInt(f.area)||0,
+      project: String(f.project||''),
+      client: String(f.client||''),
+      status: String(f.status||'available'),
+      advance: String(f.advance||''),
+      ref: String(f.ref||''),
+      agreement: String(f.agreement||''),
+      registration: String(f.registration||''),
+      bank: String(f.bank||''),
+      notes: String(f.notes||'')
+    };
+  });
+  projs = (data.projs||[]).map(function(p){ return String(p); }).filter(Boolean);
+  updateStats(); renderProjTabs(); renderAll();
+}
+
+async function saveToFirebase() {
+  try {
+    setSyncStatus('↑ Saving...', '#ffd700');
+    const docRef = doc(db, 'vesta', 'register');
+    await setDoc(docRef, { flats: flats, projs: projs });
+    setSyncStatus('● Live', '#90ee90');
+  } catch(err) {
+    console.error('Save error:', err);
+    setSyncStatus('⚠ Save failed', '#ff9999');
+  }
+}
+
 function saveData(){
   if(!dataReady) return;
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(function(){
-    isSaving = true;
-    showStatus('Saving...', true);
-    var cleanFlats = flats.map(function(f){
-      return Object.assign({}, f, {
-        advance: cleanDateStr(f.advance),
-        agreement: cleanDateStr(f.agreement),
-        registration: cleanDateStr(f.registration)
-      });
-    });
-    var payload = JSON.stringify({ action: 'saveAll', flats: cleanFlats, projs: projs });
-    // fetch POST with no-cors: Apps Script receives and saves the data.
-    // Response will be opaque (that's OK) — the write still succeeds on the server.
-    fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: payload
-    }).then(function(){
-      isSaving = false;
-      showStatus('✓ Saved to Google Sheets', true);
-    }).catch(function(err){
-      isSaving = false;
-      showStatus('⚠ Could not save — check connection', false);
-      console.error('Save error:', err);
-    });
-  }, 1500);
+  saveTimer = setTimeout(async function(){
+    await saveToFirebase();
+    saveTimer = null;
+  }, 800);
 }
 
-/* ── RENDER ── */
+// ── RENDER ────────────────────────────────────────────────────────────────────
 function filtered(){
   var q = document.getElementById('srch').value.toLowerCase();
   return flats.filter(function(f){
@@ -481,7 +459,6 @@ function filtered(){
     return true;
   });
 }
-
 function updateStats(){
   var base = activeProj==='all' ? flats : flats.filter(function(f){ return f.project===activeProj; });
   document.getElementById('sv-av').textContent = base.filter(function(f){ return f.status==='available'; }).length;
@@ -489,7 +466,6 @@ function updateStats(){
   document.getElementById('sv-tk').textContent = base.filter(function(f){ return f.status==='token'; }).length;
   document.getElementById('sv-rg').textContent = base.filter(function(f){ return f.status==='registered'; }).length;
 }
-
 function renderProjTabs(){
   var html = '<button class="ptab'+(activeProj==='all'?' active':'')+'" data-proj="">All</button>';
   projs.forEach(function(p){
@@ -497,7 +473,6 @@ function renderProjTabs(){
   });
   document.getElementById('proj-tabs').innerHTML = html;
 }
-
 function renderAll(){
   var data = filtered();
   document.getElementById('res-count').textContent = data.length+' flat'+(data.length!==1?'s':'');
@@ -505,22 +480,22 @@ function renderAll(){
   renderCards(data);
 }
 
-function tcell(val, field, idx){
-  var safe = he(val||'');
-  var disp = val ? he(val) : '<span style="color:#ccc">&#8212;</span>';
+function tcell(val,field,idx){
+  var safe=he(val||'');
+  var disp=val?he(val):'<span style="color:#ccc">&#8212;</span>';
   return '<td data-field="'+field+'" data-idx="'+idx+'">'
     +'<div class="cv" data-editcell="1"><span class="ct">'+disp+'</span><span class="eh">&#9998;</span></div>'
     +'<div class="ce"><input type="text" value="'+safe+'" data-commit="1"/></div>'
     +'</td>';
 }
-function dcell(val, field, idx){
+function dcell(val,field,idx){
   return '<td class="date-td" data-field="'+field+'" data-idx="'+idx+'">'
     +'<div class="cv" data-editcell="1"><span class="ct">'+fd(val)+'</span><span class="eh">&#9998;</span></div>'
     +'<div class="ce"><input type="date" value="'+(val||'')+'" data-commitdate="1"/></div>'
     +'</td>';
 }
-function scell(val, idx){
-  var opts = STATUSES.map(function(s){ return '<option value="'+s+'"'+(s===val?' selected':'')+'>'+slbl(s)+'</option>'; }).join('');
+function scell(val,idx){
+  var opts=STATUSES.map(function(s){ return '<option value="'+s+'"'+(s===val?' selected':'')+'>'+slbl(s)+'</option>'; }).join('');
   return '<td data-field="status" data-idx="'+idx+'">'
     +'<div class="cv status-cv">'
     +'<span class="badge '+val+' badge-display">'+slbl(val)+'</span>'
@@ -532,187 +507,166 @@ function scell(val, idx){
 function renderTable(data){
   var tb = document.getElementById('tbl-body');
   if(!data.length){ tb.innerHTML='<tr><td colspan="13" style="text-align:center;padding:40px;color:#aaa">No flats match</td></tr>'; return; }
-  var html = '';
+  var html='';
   data.forEach(function(f){
-    var idx = flats.indexOf(f);
-    html += '<tr>'
+    var idx=flats.indexOf(f);
+    html+='<tr>'
       +'<td class="sl-td"><div class="cv" style="cursor:default;justify-content:center">'+f.sl+'</div></td>'
       +'<td class="flat-td"><div class="cv" data-openedit="'+idx+'" style="cursor:pointer"><span>'+he(f.flatno)+'</span><span class="eh">&#9998;</span></div><span class="proj-sub">'+he(f.project)+'</span></td>'
-      +tcell(f.floor,'floor',idx)
-      +tcell(f.area,'area',idx)
-      +tcell(f.client,'client',idx)
-      +scell(f.status,idx)
-      +dcell(f.advance,'advance',idx)
-      +tcell(f.ref,'ref',idx)
-      +dcell(f.agreement,'agreement',idx)
-      +dcell(f.registration,'registration',idx)
-      +tcell(f.bank,'bank',idx)
-      +tcell(f.notes||'','notes',idx)
+      +tcell(f.floor,'floor',idx)+tcell(f.area,'area',idx)+tcell(f.client,'client',idx)
+      +scell(f.status,idx)+dcell(f.advance,'advance',idx)+tcell(f.ref,'ref',idx)
+      +dcell(f.agreement,'agreement',idx)+dcell(f.registration,'registration',idx)
+      +tcell(f.bank,'bank',idx)+tcell(f.notes||'','notes',idx)
       +'<td class="actions-td"><div class="cv">'
       +'<button class="ibtn" data-openedit="'+idx+'">&#9998;</button>'
       +'<button class="ibtn danger" data-quickdel="'+idx+'">&#128465;</button>'
-      +'</div></td>'
-      +'</tr>';
+      +'</div></td></tr>';
   });
-  tb.innerHTML = html;
+  tb.innerHTML=html;
 }
 
 function renderCards(data){
-  var c = document.getElementById('card-list');
+  var c=document.getElementById('card-list');
   if(!data.length){ c.innerHTML='<div style="text-align:center;padding:32px;color:#aaa">No flats match</div>'; return; }
-  var html = '';
+  var html='';
   data.forEach(function(f){
-    var idx = flats.indexOf(f);
-    html += '<div class="fc">'
+    var idx=flats.indexOf(f);
+    html+='<div class="fc">'
       +'<div class="fc-head"><div>'
       +'<div class="fc-sl">SL '+f.sl+' &middot; '+he(f.project)+'</div>'
       +'<div class="fc-name">Flat '+he(f.flatno)+'</div>'
-      +'<div class="fc-proj">Floor '+he(f.floor||'—')+' &middot; '+f.area+' sqft</div>'
+      +'<div class="fc-proj">'+he(f.floor||'—')+' &middot; '+f.area+' sqft</div>'
       +'</div><span class="badge '+f.status+'">'+slbl(f.status)+'</span></div>'
       +'<div>'
       +'<div class="dr"><span class="dk">Client</span><span class="dv">'+he(f.client||'—')+'</span></div>'
       +(f.advance?'<div class="dr"><span class="dk">Advance</span><span class="dv">'+fd(f.advance)+'</span></div>':'')
       +(f.ref?'<div class="dr"><span class="dk">Reference</span><span class="dv">'+he(f.ref)+'</span></div>':'')
       +(f.agreement?'<div class="dr"><span class="dk">Agreement</span><span class="dv">'+fd(f.agreement)+'</span></div>':'')
-      +(f.registration?'<div class="dr"><span class="dk">Registration</span><span class="dv">'+he(f.registration)+'</span></div>':'')
+      +(f.registration?'<div class="dr"><span class="dk">Reg. Date</span><span class="dv">'+fd(f.registration)+'</span></div>':'')
       +(f.bank?'<div class="dr"><span class="dk">Bank</span><span class="dv">'+he(f.bank)+'</span></div>':'')
       +(f.notes?'<div class="dr"><span class="dk">Notes</span><span class="dv">'+he(f.notes)+'</span></div>':'')
       +'</div>'
       +'<button class="fc-edit" data-openedit="'+idx+'">&#9998; Edit this flat</button>'
       +'</div>';
   });
-  c.innerHTML = html;
+  c.innerHTML=html;
 }
 
-/* ── EVENT DELEGATION ── no inline onclick, no esc() injection */
+// ── EVENTS ────────────────────────────────────────────────────────────────────
 document.body.addEventListener('click', function(e){
-  var t = e.target;
-
-  /* Walk up to find the real action element */
-  var el = t;
-  while(el && el !== document.body){
-    if(el.dataset.openedit !== undefined){ openEdit(parseInt(el.dataset.openedit)); return; }
-    if(el.dataset.quickdel !== undefined){ quickDel(parseInt(el.dataset.quickdel)); return; }
+  var el=e.target;
+  while(el&&el!==document.body){
+    if(el.dataset.openedit!==undefined){ openEdit(parseInt(el.dataset.openedit)); return; }
+    if(el.dataset.quickdel!==undefined){ quickDel(parseInt(el.dataset.quickdel)); return; }
     if(el.dataset.editcell){ startEdit(el.closest('td')); return; }
-    if(el.classList.contains('ptab')){ activeProj = el.dataset.proj ? decodeURIComponent(el.dataset.proj) : 'all'; renderProjTabs(); updateStats(); renderAll(); return; }
+    if(el.classList.contains('ptab')){ activeProj=el.dataset.proj?decodeURIComponent(el.dataset.proj):'all'; renderProjTabs(); updateStats(); renderAll(); return; }
     if(el.classList.contains('sp')){ document.querySelectorAll('.sp').forEach(function(x){x.classList.remove('active');}); el.classList.add('active'); activeSt=el.dataset.s; renderAll(); return; }
     if(el.classList.contains('pi-del')){ askProjDel(decodeURIComponent(el.dataset.proj)); return; }
-    el = el.parentElement;
+    el=el.parentElement;
   }
-
-  /* Static button IDs */
-  var id = t.id;
-  if(id==='btn-proj') { openProjMgr(); return; }
-  if(id==='btn-export') { doExport(); return; }
-  if(id==='btn-add') { openAdd(); return; }
-  if(id==='btn-close-modal'||id==='btn-cancel-modal') { closeModal(); return; }
-  if(id==='btn-save-flat') { saveFlat(); return; }
-  if(id==='del-btn') { askDel(); return; }
-  if(id==='btn-cancel-del') { document.getElementById('del-conf').classList.remove('open'); return; }
-  if(id==='btn-do-del') { doDel(); return; }
-  if(id==='btn-close-proj'||id==='btn-done-proj') { closeProjMgr(); return; }
-  if(id==='btn-add-proj') { addProj(); return; }
-  if(id==='btn-cancel-pdel') { document.getElementById('pdel-conf').classList.remove('open'); return; }
-  if(id==='btn-do-pdel') { doProjDel(); return; }
+  var id=e.target.id;
+  if(id==='btn-proj'){openProjMgr();return;}
+  if(id==='btn-export'){doExport();return;}
+  if(id==='btn-add'){openAdd();return;}
+  if(id==='btn-close-modal'||id==='btn-cancel-modal'){closeModal();return;}
+  if(id==='btn-save-flat'){saveFlat();return;}
+  if(id==='del-btn'){askDel();return;}
+  if(id==='btn-cancel-del'){document.getElementById('del-conf').classList.remove('open');return;}
+  if(id==='btn-do-del'){doDel();return;}
+  if(id==='btn-close-proj'||id==='btn-done-proj'){closeProjMgr();return;}
+  if(id==='btn-add-proj'){addProj();return;}
+  if(id==='btn-cancel-pdel'){document.getElementById('pdel-conf').classList.remove('open');return;}
+  if(id==='btn-do-pdel'){doProjDel();return;}
 });
 
 document.body.addEventListener('change', function(e){
-  var t = e.target;
+  var t=e.target;
   if(t.dataset.changestatus){
-    var td = t.closest('td');
-    var idx = parseInt(td.dataset.idx);
-    var val = t.value;
-    if(idx>=0 && flats[idx]){
-      flats[idx].status = val;
-      saveData(); updateStats();
-      var badge = td.querySelector('.badge-display');
-      if(badge){ badge.className='badge badge-display '+val; badge.textContent=slbl(val); }
-      var tr = td.closest('tr');
-      tr.classList.remove('row-flash'); void tr.offsetWidth; tr.classList.add('row-flash');
-      setTimeout(function(){ tr.classList.remove('row-flash'); }, 600);
+    var td=t.closest('td'), idx=parseInt(td.dataset.idx), val=t.value;
+    if(idx>=0&&flats[idx]){
+      flats[idx].status=val; saveData(); updateStats();
+      var badge=td.querySelector('.badge-display');
+      if(badge){badge.className='badge badge-display '+val;badge.textContent=slbl(val);}
+      var tr=td.closest('tr');
+      tr.classList.remove('row-flash');void tr.offsetWidth;tr.classList.add('row-flash');
+      setTimeout(function(){tr.classList.remove('row-flash');},600);
     }
     return;
   }
-  if(t.dataset.commitdate){ commitInput(t); }
+  if(t.dataset.commitdate){commitInput(t);}
 });
 
-document.getElementById('srch').addEventListener('input', renderAll);
-document.getElementById('new-proj').addEventListener('keydown', function(e){ if(e.key==='Enter') addProj(); });
+document.getElementById('srch').addEventListener('input',renderAll);
+document.getElementById('new-proj').addEventListener('keydown',function(e){if(e.key==='Enter')addProj();});
 
-/* Blur for text cells — use capture to catch before DOM reuse */
-document.body.addEventListener('blur', function(e){
-  if(e.target.dataset.commit || e.target.dataset.commitdate){ commitInput(e.target); }
-}, true);
-
-document.body.addEventListener('keydown', function(e){
-  if(e.target.dataset.commit || e.target.dataset.commitdate){
-    if(e.key==='Enter') e.target.blur();
-    if(e.key==='Escape'){ var td=e.target.closest('td'); if(td) td.classList.remove('editing'); }
+document.body.addEventListener('blur',function(e){
+  if(e.target.dataset.commit||e.target.dataset.commitdate){commitInput(e.target);}
+},true);
+document.body.addEventListener('keydown',function(e){
+  if(e.target.dataset.commit||e.target.dataset.commitdate){
+    if(e.key==='Enter')e.target.blur();
+    if(e.key==='Escape'){var td=e.target.closest('td');if(td)td.classList.remove('editing');}
   }
 });
 
 function startEdit(td){
-  if(!td) return;
+  if(!td)return;
   td.classList.add('editing');
-  var inp = td.querySelector('input');
-  if(inp){ inp.focus(); if(inp.type==='date' && inp.showPicker) try{inp.showPicker();}catch(ex){} }
+  var inp=td.querySelector('input');
+  if(inp){inp.focus();if(inp.type==='date'&&inp.showPicker)try{inp.showPicker();}catch(ex){}}
 }
-
 function commitInput(inp){
-  var td = inp.closest('td'); if(!td) return;
-  var field = td.dataset.field, idx = parseInt(td.dataset.idx), val = inp.value;
-  if(idx>=0 && flats[idx]){
-    flats[idx][field] = (field==='area') ? (parseInt(val)||0) : val;
-    saveData(); updateStats();
-    var ct = td.querySelector('.ct');
+  var td=inp.closest('td');if(!td)return;
+  var field=td.dataset.field,idx=parseInt(td.dataset.idx),val=inp.value;
+  if(idx>=0&&flats[idx]){
+    flats[idx][field]=(field==='area')?(parseInt(val)||0):val;
+    saveData();updateStats();
+    var ct=td.querySelector('.ct');
     if(ct){
-      if(field==='advance'||field==='agreement'||field==='registration') ct.textContent = fd(val)||'—';
-      else{ ct.innerHTML = val ? he(val) : '<span style="color:#ccc">&#8212;</span>'; }
+      if(field==='advance'||field==='agreement'||field==='registration')ct.textContent=fd(val)||'—';
+      else{ct.innerHTML=val?he(val):'<span style="color:#ccc">&#8212;</span>';}
     }
-    var tr = td.closest('tr');
-    if(tr){ tr.classList.remove('row-flash'); void tr.offsetWidth; tr.classList.add('row-flash'); setTimeout(function(){ tr.classList.remove('row-flash'); },600); }
+    var tr=td.closest('tr');
+    if(tr){tr.classList.remove('row-flash');void tr.offsetWidth;tr.classList.add('row-flash');setTimeout(function(){tr.classList.remove('row-flash');},600);}
   }
   td.classList.remove('editing');
 }
 
-/* ── MODAL ── */
+// ── MODAL ─────────────────────────────────────────────────────────────────────
 function pSel(){
-  document.getElementById('f-proj').innerHTML = projs.map(function(p){ return '<option value="'+he(p)+'">'+he(p)+'</option>'; }).join('');
+  document.getElementById('f-proj').innerHTML=projs.map(function(p){return '<option value="'+he(p)+'">'+he(p)+'</option>';}).join('');
 }
-function sv(id,v){ document.getElementById(id).value = v||''; }
-
+function sv(id,v){document.getElementById(id).value=v||'';}
 function openAdd(){
-  editKey = null;
-  document.getElementById('modal-title').textContent = 'Add flat';
-  document.getElementById('del-btn').style.display = 'none';
+  editKey=null;
+  document.getElementById('modal-title').textContent='Add flat';
+  document.getElementById('del-btn').style.display='none';
   pSel();
-  if(activeProj!=='all') document.getElementById('f-proj').value = activeProj;
-  ['f-flatno','f-floor','f-area','f-client','f-advance','f-ref','f-agr','f-reg','f-bank','f-notes'].forEach(function(id){ sv(id,''); });
-  document.getElementById('f-status').value = 'available';
+  if(activeProj!=='all')document.getElementById('f-proj').value=activeProj;
+  ['f-flatno','f-floor','f-area','f-client','f-advance','f-ref','f-agr','f-reg','f-bank','f-notes'].forEach(function(id){sv(id,'');});
+  document.getElementById('f-status').value='available';
   document.getElementById('flat-modal').classList.add('open');
 }
 function openEdit(idx){
-  var f = flats[idx]; if(!f) return;
-  editKey = idx;
-  document.getElementById('modal-title').textContent = 'Edit - Flat '+f.flatno;
-  document.getElementById('del-btn').style.display = '';
-  pSel(); document.getElementById('f-proj').value = f.project;
-  sv('f-flatno',f.flatno); sv('f-floor',f.floor); sv('f-area',f.area); sv('f-client',f.client);
-  document.getElementById('f-status').value = f.status;
-  sv('f-advance',f.advance); sv('f-ref',f.ref); sv('f-agr',f.agreement); sv('f-reg',f.registration); sv('f-bank',f.bank); sv('f-notes',f.notes||'');
+  var f=flats[idx];if(!f)return;
+  editKey=idx;
+  document.getElementById('modal-title').textContent='Edit - Flat '+f.flatno;
+  document.getElementById('del-btn').style.display='';
+  pSel();document.getElementById('f-proj').value=f.project;
+  sv('f-flatno',f.flatno);sv('f-floor',f.floor);sv('f-area',f.area);sv('f-client',f.client);
+  document.getElementById('f-status').value=f.status;
+  sv('f-advance',f.advance);sv('f-ref',f.ref);sv('f-agr',f.agreement);sv('f-reg',f.registration);sv('f-bank',f.bank);sv('f-notes',f.notes||'');
   document.getElementById('flat-modal').classList.add('open');
 }
-function closeModal(){ document.getElementById('flat-modal').classList.remove('open'); }
-
-function nextSl(){ return flats.length ? Math.max.apply(null, flats.map(function(f){ return f.sl||0; }))+1 : 1; }
-
+function closeModal(){document.getElementById('flat-modal').classList.remove('open');}
+function nextSl(){return flats.length?Math.max.apply(null,flats.map(function(f){return f.sl||0;}))+1:1;}
 function saveFlat(){
-  var fn = document.getElementById('f-flatno').value.trim();
-  var pj = document.getElementById('f-proj').value;
-  if(!fn){ alert('Flat No. is required'); return; }
-  var obj = {
-    sl: editKey!==null ? (flats[editKey] ? flats[editKey].sl : nextSl()) : nextSl(),
-    flatno:fn, project:pj,
+  var fn=document.getElementById('f-flatno').value.trim();
+  var pj=document.getElementById('f-proj').value;
+  if(!fn){alert('Flat No. is required');return;}
+  var obj={
+    sl:editKey!==null?(flats[editKey]?flats[editKey].sl:nextSl()):nextSl(),
+    flatno:fn,project:pj,
     floor:document.getElementById('f-floor').value.trim()||'',
     area:parseInt(document.getElementById('f-area').value)||0,
     client:document.getElementById('f-client').value.trim(),
@@ -724,84 +678,81 @@ function saveFlat(){
     bank:document.getElementById('f-bank').value.trim(),
     notes:document.getElementById('f-notes').value.trim()
   };
-  if(editKey!==null){ flats[editKey] = obj; }
+  if(editKey!==null){flats[editKey]=obj;}
   else{
-    var dup = flats.some(function(x){ return x.flatno===fn && x.project===pj; });
-    if(dup){ alert('Flat '+fn+' already exists in '+pj); return; }
+    var dup=flats.some(function(x){return x.flatno===fn&&x.project===pj;});
+    if(dup){alert('Flat '+fn+' already exists in '+pj);return;}
     flats.push(obj);
   }
-  saveData(); updateStats(); renderProjTabs(); renderAll(); closeModal();
+  saveData();updateStats();renderProjTabs();renderAll();closeModal();
 }
-
 function askDel(){
-  var f = editKey!==null ? flats[editKey] : null;
-  document.getElementById('del-msg').textContent = 'Delete flat '+(f?f.flatno:'')+'? Cannot be undone.';
+  var f=editKey!==null?flats[editKey]:null;
+  document.getElementById('del-msg').textContent='Delete flat '+(f?f.flatno:'')+'? Cannot be undone.';
   document.getElementById('del-conf').classList.add('open');
 }
-function quickDel(idx){ editKey=idx; askDel(); }
+function quickDel(idx){editKey=idx;askDel();}
 function doDel(){
-  if(editKey!==null) flats.splice(editKey,1);
+  if(editKey!==null)flats.splice(editKey,1);
   editKey=null;
-  saveData(); updateStats(); renderProjTabs(); renderAll();
-  document.getElementById('del-conf').classList.remove('open'); closeModal();
+  saveData();updateStats();renderProjTabs();renderAll();
+  document.getElementById('del-conf').classList.remove('open');closeModal();
 }
 
-/* ── PROJECTS ── */
-function openProjMgr(){ renderProjList(); document.getElementById('proj-modal').classList.add('open'); }
-function closeProjMgr(){ document.getElementById('proj-modal').classList.remove('open'); renderProjTabs(); updateStats(); renderAll(); }
+// ── PROJECTS ──────────────────────────────────────────────────────────────────
+function openProjMgr(){renderProjList();document.getElementById('proj-modal').classList.add('open');}
+function closeProjMgr(){document.getElementById('proj-modal').classList.remove('open');renderProjTabs();updateStats();renderAll();}
 function renderProjList(){
-  var c = document.getElementById('proj-list');
-  if(!projs.length){ c.innerHTML='<p style="color:#aaa;font-size:13px">No projects yet.</p>'; return; }
-  c.innerHTML = projs.map(function(p){
-    var cnt = flats.filter(function(f){ return f.project===p; }).length;
+  var c=document.getElementById('proj-list');
+  if(!projs.length){c.innerHTML='<p style="color:#aaa;font-size:13px">No projects yet.</p>';return;}
+  c.innerHTML=projs.map(function(p){
+    var cnt=flats.filter(function(f){return f.project===p;}).length;
     return '<div class="pi"><div><div class="pname">'+he(p)+'</div><div class="pcnt">'+cnt+' flat'+(cnt!==1?'s':'')+'</div></div>'
       +'<button class="pi-del" data-proj="'+encodeURIComponent(p)+'">&#128465; Remove</button></div>';
   }).join('');
 }
 function addProj(){
-  var inp = document.getElementById('new-proj'), name = inp.value.trim();
-  if(!name){ alert('Enter a project name'); return; }
-  if(projs.indexOf(name)>=0){ alert('Already exists'); return; }
-  projs.push(name); inp.value=''; saveData(); renderProjList();
+  var inp=document.getElementById('new-proj'),name=inp.value.trim();
+  if(!name){alert('Enter a project name');return;}
+  if(projs.indexOf(name)>=0){alert('Already exists');return;}
+  projs.push(name);inp.value='';saveData();renderProjList();
 }
 function askProjDel(name){
-  delProj = name;
-  var cnt = flats.filter(function(f){ return f.project===name; }).length;
-  document.getElementById('pdel-msg').textContent = 'Remove "'+name+'"?'+(cnt?' Also deletes '+cnt+' flat'+(cnt!==1?'s':'')+'.':'');
+  delProj=name;
+  var cnt=flats.filter(function(f){return f.project===name;}).length;
+  document.getElementById('pdel-msg').textContent='Remove "'+name+'"?'+(cnt?' Also deletes '+cnt+' flat'+(cnt!==1?'s':'')+'.':'');
   document.getElementById('pdel-conf').classList.add('open');
 }
 function doProjDel(){
-  flats = flats.filter(function(f){ return f.project!==delProj; });
-  projs = projs.filter(function(p){ return p!==delProj; });
-  if(activeProj===delProj) activeProj='all';
-  saveData(); document.getElementById('pdel-conf').classList.remove('open'); renderProjList();
+  flats=flats.filter(function(f){return f.project!==delProj;});
+  projs=projs.filter(function(p){return p!==delProj;});
+  if(activeProj===delProj)activeProj='all';
+  saveData();document.getElementById('pdel-conf').classList.remove('open');renderProjList();
 }
 
-/* ── EXPORT ── */
+// ── EXPORT ────────────────────────────────────────────────────────────────────
 function doExport(){
-  var h = ['SL No','Flat No','Floor','Flat Area (sqft)','Project','Client Name','Booking Status','Advance Received On','Reference','Agreement Date','Registration Date','Loan Applied In Bank','Notes'];
-  var rows = flats.map(function(f){
+  var h=['SL No','Flat No','Floor','Flat Area (sqft)','Project','Client Name','Booking Status','Advance Received On','Reference','Agreement Date','Registration Date','Loan Applied In Bank','Notes'];
+  var rows=flats.map(function(f){
     return [f.sl,f.flatno,f.floor,f.area,f.project,f.client,slbl(f.status),f.advance,f.ref,f.agreement,f.registration,f.bank,f.notes||'']
-      .map(function(v){ return '"'+String(v||'').replace(/"/g,'""')+'"'; }).join(',');
+      .map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');
   });
-  var csv = [h.join(',')].concat(rows).join('\n');
-  var a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
-  a.download = 'vesta_projects_register.csv';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  var csv=[h.join(',')].concat(rows).join('\n');
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='vesta_projects_register.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 
-/* ── INIT ── */
-loadData();
+// ── START ─────────────────────────────────────────────────────────────────────
+initData();
 </script>
 
 <script>
-if(window.navigator.standalone === false) {
-  // Only show on iOS Safari, not already installed
-  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  if(isIOS) document.getElementById('ios-banner').style.display='block';
+if(window.navigator.standalone===false){
+  var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(isIOS)document.getElementById('ios-banner').style.display='block';
 }
 </script>
-
 </body>
 </html>
