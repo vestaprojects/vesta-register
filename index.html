@@ -453,21 +453,30 @@ function saveData(){
       });
     });
     var payload = JSON.stringify({ action: 'saveAll', flats: cleanFlats, projs: projs });
-    // Use no-cors POST - GAS accepts it, we just can't read response
-    fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: payload
-    })
-    .then(function(){
+    // Use JSONP - injects script tag, completely bypasses CORS
+    var cbName = 'vestaCb_' + Date.now();
+    window[cbName] = function(result){
       isSaving = false;
-      showStatus('✓ Saved to Google Sheets', true);
-    })
-    .catch(function(err){
+      delete window[cbName];
+      var old = document.getElementById('jsonp-script');
+      if(old) old.parentNode.removeChild(old);
+      if(result && result.ok){
+        showStatus('✓ Saved to Google Sheets', true);
+      } else {
+        showStatus('⚠ Save failed: ' + (result&&result.error||'unknown'), false);
+      }
+    };
+    var s = document.createElement('script');
+    s.id = 'jsonp-script';
+    s.onerror = function(){
       isSaving = false;
-      console.log('Save error:', err);
+      delete window[cbName];
       showStatus('⚠ Could not save — check connection', false);
-    });
+    };
+    s.src = SCRIPT_URL + '?callback=' + cbName + '&data=' + encodeURIComponent(payload);
+    var old = document.getElementById('jsonp-script');
+    if(old) old.parentNode.removeChild(old);
+    document.body.appendChild(s);
   }, 2000);
 }
 
