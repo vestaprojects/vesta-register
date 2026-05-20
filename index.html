@@ -343,6 +343,21 @@ function showStatus(msg, ok) {
   if(ok) setTimeout(function(){ el.style.display='none'; }, 5000);
 }
 
+function cleanDateStr(val) {
+  if(!val) return '';
+  var s = String(val);
+  // Already YYYY-MM-DD
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // ISO string like 1905-03-18T18:38:50.000Z - parse and fix
+  var d = new Date(s);
+  if(!isNaN(d.getTime())) {
+    // Check if year is wrong (1905 means it was a serial number misread)
+    if(d.getFullYear() < 2000) return '';
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  return '';
+}
+
 function cleanDate(val) {
   if(!val) return '';
   var s = String(val);
@@ -372,7 +387,7 @@ function cleanDate(val) {
 
 function loadData(){
   showStatus('Loading...', true);
-  fetch(SCRIPT_URL + '?action=getAll', {redirect:'follow'})
+  fetch(SCRIPT_URL + '?action=getAll', {redirect:'follow', mode:'cors'})
     .then(function(r){ return r.json(); })
     .then(function(data){
       if(data.flats && data.flats.length){
@@ -430,10 +445,17 @@ function saveData(){
   showStatus('Saving...', true);
   clearTimeout(saveTimer);
   saveTimer = setTimeout(function(){
-    fetch(SCRIPT_URL, {
-      method: 'POST',
+    // Clean dates before saving
+    var cleanFlats = flats.map(function(f){
+      return Object.assign({}, f, {
+        advance: cleanDateStr(f.advance),
+        agreement: cleanDateStr(f.agreement)
+      });
+    });
+    var payload = JSON.stringify({ action: 'saveAll', flats: cleanFlats, projs: projs });
+    fetch(SCRIPT_URL + '?data=' + encodeURIComponent(payload), {
       redirect: 'follow',
-      body: JSON.stringify({ action: 'saveAll', flats: flats, projs: projs })
+      mode: 'cors'
     })
     .then(function(r){ return r.json(); })
     .then(function(d){ isSaving=false; showStatus(d.ok ? '✓ Saved to Google Sheets' : '⚠ Save failed', !!d.ok); })
